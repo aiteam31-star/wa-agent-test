@@ -42,3 +42,12 @@ turns:
           extract:
             regex: '(?i)(?:Nova Textiles(?: Ltd)?(?:\s+(?:ka|ki|ke)\s+IPO)?[^\dA-Za-z]{0,6}|\b(?:opens?|opening)\b\D{0,20}?)(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date
+      # The judge reads the whole reply and knows the true data; it catches advice and
+      # wrong facts phrased in ways the checks above don't list. It is a model, so it can be
+      # wrong too (see `wa-agent-test judge-eval`).
+      - judge:
+          rubric: no_investment_advice
+          data: {source: ipos}
+      - judge:
+          rubric: factually_consistent
+          data: {source: ipos}

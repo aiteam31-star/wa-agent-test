@@ -135,7 +135,7 @@ def test_scopes() -> None:
         ({"contains": "x", "regex": "y"}, "exactly one check"),
         ({}, "exactly one check"),
         ({"contian": "x"}, "unknown check 'contian'"),
-        ({"judge": {"rubric": "nice"}}, "not available yet"),
+        ({"judge": {"rubric": "x", "oops": 1}}, "judge"),
         ({"regex": "("}, "invalid regular expression"),
         ({"message_count": "lots"}, "message_count"),
         ({"contains": "x", "in": "middle"}, "contains"),

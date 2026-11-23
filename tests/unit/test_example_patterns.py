@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from wa_agent_test.assertions import BotMessage, CheckResult, TurnContext
+from wa_agent_test.assertions import BotMessage, CheckResult, JudgeCheck, TurnContext
 from wa_agent_test.config import build_truth_sources, load_config
 from wa_agent_test.scenarios import Scenario, load_scenarios
 
@@ -22,7 +22,12 @@ TRUTH = build_truth_sources(load_config(CONFIG), CONFIG.parent)
 def evaluate(name: str, turn: int, text: str) -> list[CheckResult]:
     message = BotMessage(message_id="wamid.X", type="text", text=text, latency_ms=1.0, raw={})
     ctx = TurnContext([message], TRUTH)
-    return [check.evaluate(ctx) for check in SCENARIOS[name].turns[turn].expect]
+    # judge checks need a model and are covered elsewhere; this file pins the simple checks
+    return [
+        check.evaluate(ctx)
+        for check in SCENARIOS[name].turns[turn].expect
+        if not isinstance(check, JudgeCheck)
+    ]
 
 
 def failures(name: str, turn: int, text: str) -> list[str]:

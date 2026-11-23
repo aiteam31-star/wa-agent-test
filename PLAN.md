@@ -84,13 +84,16 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 
 **Exit:** a scenario can assert reply values against a truth source; both built-in sources tested. **All three demo-bot defects are caught** end to end: clean mode passes the demo scenario suite; each forced defect makes the suite fail on exactly the expected assertion (wrong listing date via fact check, four buttons, "you should apply").
 
-## Stage 7 — LLM judge
+## Stage 7 — LLM judge ✅
 - `Judge` protocol (rubric + transcript → verdict, score, rationale) with strict structured output.
 - Anthropic and OpenAI adapters as optional extras with lazy imports; temperature 0; retries/backoff.
 - On-disk response cache keyed by (model, rubric, transcript) to make CI cheap and reruns stable.
 - Fake judge for tests; `llm`-marked live tests skipped by default.
 
 **Exit:** `judge` assertions work with either provider and with the fake judge in CI.
+
+**Delivered:** `judge:` check (async-evaluated); `Judge` protocol with Ollama (default, `llama3.2:3b`), Anthropic and fake judges over plain HTTP; built-in rubrics `no_investment_advice` and `factually_consistent` (or free-text rubrics); the true data is passed to the judge; every verdict carries a short reason; on-disk cache keyed on model + instructions + rubric + inputs, never caching errors; a judge that can't answer fails the check; `wa-agent-test judge-eval` and a 34-case calibration set to measure the judge's own mistakes; judge checks on the 5 advice traps.
+**Measured (llama3.2:3b as judge, on that calibration set):** 30/34 correct. Advice rubric 16/16; factual rubric 14/18 (3 missed bad replies, 1 false alarm), so exact-number comparisons are unreliable on a small judge. On bad advice padded with a harmless fact (so the simple patterns can't trip on missing facts) the simple checks missed 7 of 8 and the judge caught all 8 and passed the good reply; on the 5 real model replies the judge raised 1 false alarm and missed 1 reply with invented dates. The judge was the same 3B model as the bot, and some of its stated reasons were wrong even when its verdict was right. The Anthropic judge is tested against mocked HTTP only, not a live key. **Carried over:** a bigger-model comparison, entry-point discovery of third-party judges.
 
 ## Stage 8 — Baselines, regression diffing, reports
 - Normalize and save run results as a baseline (`baseline save`); store in `baselines/`.

@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from wa_agent_test.judges import Judge
 from wa_agent_test.truth import TruthSource
 
 Scope = Literal["all", "first", "last"] | int
@@ -44,10 +45,12 @@ class CheckResult(BaseModel):
 
 @dataclass(frozen=True)
 class TurnContext:
-    """What a check sees: the bot's (accepted) messages for one turn, and the truth sources."""
+    """What a check sees: the turn's bot messages, the truth sources, and (for judges) the rest."""
 
     messages: list[BotMessage]
     truth: Mapping[str, TruthSource]
+    user_message: str = ""  # what the simulated user said this turn
+    judge: Judge | None = None  # set when the run has a judge configured
 
 
 class ScopeError(Exception):
@@ -86,12 +89,26 @@ class Assertion(BaseModel):
     def check(self, selected: list[BotMessage], ctx: TurnContext) -> tuple[bool, str]:
         raise NotImplementedError
 
+    async def acheck(self, selected: list[BotMessage], ctx: TurnContext) -> tuple[bool, str]:
+        """Async form of :meth:`check`. Checks that call a judge override this one."""
+        return self.check(selected, ctx)
+
+    def _result(self, passed: bool, message: str) -> CheckResult:
+        if not passed and self.why:
+            message = f"{self.why} ({message})"
+        return CheckResult(kind=self.kind, passed=passed, message=message)
+
     def evaluate(self, ctx: TurnContext) -> CheckResult:
         try:
             selected = select(ctx.messages, self.scope)
         except ScopeError as exc:
             return CheckResult(kind=self.kind, passed=False, message=str(exc))
-        passed, message = self.check(selected, ctx)
-        if not passed and self.why:
-            message = f"{self.why} ({message})"
-        return CheckResult(kind=self.kind, passed=passed, message=message)
+        return self._result(*self.check(selected, ctx))
+
+    async def aevaluate(self, ctx: TurnContext) -> CheckResult:
+        """Like :meth:`evaluate`, but allowed to wait (the runner uses this one)."""
+        try:
+            selected = select(ctx.messages, self.scope)
+        except ScopeError as exc:
+            return CheckResult(kind=self.kind, passed=False, message=str(exc))
+        return self._result(*await self.acheck(selected, ctx))

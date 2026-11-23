@@ -19,6 +19,7 @@ from wa_agent_test.assertions.deterministic import (
     ReplyWithinMs,
 )
 from wa_agent_test.assertions.facts import Fact
+from wa_agent_test.assertions.judge_check import JudgeCheck
 
 REGISTRY: dict[str, type[Assertion]] = {
     cls.kind: cls
@@ -33,6 +34,7 @@ REGISTRY: dict[str, type[Assertion]] = {
         ButtonTitles,
         ReplyWithinMs,
         Fact,
+        JudgeCheck,
     )
 }
 
@@ -46,8 +48,6 @@ def parse_check(item: Any) -> Assertion:
     data = dict(item)
     scope = data.pop("in", "all")
     why = data.pop("why", None)
-    if "judge" in data:
-        raise ValueError("'judge' checks are not available yet (planned for a later stage)")
     if len(data) != 1:
         found = sorted(data) or "nothing"
         raise ValueError(f"needs exactly one check (plus optional 'in' and 'why'), found {found}")

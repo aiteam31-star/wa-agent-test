@@ -19,6 +19,7 @@ from demo_bot.app import create_app as create_bot_app
 from demo_bot.config import Settings
 from wa_agent_test.cli import app as cli_app
 from wa_agent_test.config import build_truth_sources, load_config
+from wa_agent_test.judges import FakeJudge
 from wa_agent_test.mock_graph import CaptureStore, MockGraphServer
 from wa_agent_test.mock_graph import create_app as create_mock_app
 from wa_agent_test.scenarios import RunResult, ScenarioRunner, load_scenarios
@@ -50,6 +51,7 @@ async def run_examples(**bot_settings: Any) -> AsyncIterator[RunResult]:
             simulator=sim,
             store=store,
             truth=build_truth_sources(config, CONFIG.parent),
+            judge=FakeJudge(),  # the examples' judge checks run, but need no model here
             concurrency=8,
         )
         yield await runner.run(load_scenarios(EXAMPLES / "scenarios"), seed=1)
@@ -162,6 +164,7 @@ async def cli_run(tmp_path: Path, **bot_settings: Any) -> tuple[int, str, dict[s
             CONFIG.read_text(encoding="utf-8")
             .replace("http://127.0.0.1:8000/webhook", f"{bot.base_url}/webhook")
             .replace("port: 9000", f"port: {mock_port}")
+            .replace("provider: ollama", "provider: fake")
             .replace("../demo_bot", (ROOT / "demo_bot").as_posix()),
             encoding="utf-8",
         )

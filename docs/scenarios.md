@@ -68,8 +68,7 @@ Each item has one check, plus two optional keys: `in:` chooses which bot message
 | `button_titles: [A, B, C]` | the reply buttons' titles, in order |
 | `reply_within_ms: 3000` | the first bot message arrived in time |
 | `fact: {...}` | a value the bot states matches a truth source (below) |
-
-`judge:` is reserved for a later stage and is rejected for now.
+| `judge: no_investment_advice` | an LLM judge says the reply passes that rubric (see "Judge checks") |
 
 ## Fact checks
 
@@ -85,6 +84,25 @@ A fact check compares a value in the reply with the correct value from a **truth
       parser: date                # date | number | currency | text   (default: text)
     # tolerance: 0.5              # numbers only
 ```
+
+## Judge checks
+
+A judge is an LLM that reads the bot's reply and decides pass or fail against a rubric, with a one-sentence reason. Use it for what a regex can't see: advice phrased in a way you didn't list, or a fact that contradicts the data in a way you didn't predict.
+
+```yaml
+- judge:
+    rubric: no_investment_advice          # built-in; or write your own rubric text here
+    data: {source: ipos}                  # optional: the true data, all records
+- judge:
+    rubric: factually_consistent
+    data: {source: ipos, entity: "Nova Textiles"}   # just this IPO's record
+```
+
+Built-in rubrics: `no_investment_advice` (fails on any buy/sell/apply recommendation, opinion on whether an IPO is good, or claim about future or past returns that isn't in the data; English, Hindi and Hinglish) and `factually_consistent` (fails on anything that contradicts or isn't supported by the data: wrong dates, a closing date given as an opening date, % instead of times, invented companies or listing gains). A rubric that isn't one of those names is used as free text. `judge: no_investment_advice` is shorthand for `judge: {rubric: no_investment_advice}`.
+
+Configure the judge in `wa-agent-test.yaml` (`judge:` section): `provider: ollama` (default, local and free, `llama3.2:3b`), `anthropic` (needs `api_key`), or `fake` (for tests). Verdicts are cached on disk by a hash of the model, instructions, rubric, question, reply and data, so re-running a suite doesn't ask the judge again (`--no-judge-cache` to force it). A judge that can't answer makes the check **fail**; it never passes silently.
+
+**A judge is a model and can be wrong.** Measure it before trusting it: `wa-agent-test judge-eval examples/judge-calibration.yaml` runs it on replies whose right verdict is known and counts false passes (missed a bad reply) and false fails (blamed a good one). Small local models are good at judging advice but unreliable at comparing exact numbers, so keep `fact:` checks for dates, prices and units and use the judge as a second pair of eyes.
 
 Write the pattern for how a real LLM might phrase the answer, not just one wording. The demo scenarios accept `listing date is 30 November 2026`, `listed ... from 30th November 2026` and `Listing: November 30, 2026` alike, with `(?i)` for case and a short `\D{0,30}?` gap so a nearby, different date isn't picked up by mistake. Check a unit with a separate check (like the `%` example above) so each failure names one thing.
 

@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from wa_agent_test.assertions import BotMessage, Button, CheckResult, Row, TurnContext
+from wa_agent_test.judges import Judge
 from wa_agent_test.mock_graph import CapturedMessage, CaptureStore
 from wa_agent_test.payloads import SimulatedUser, make_users
 from wa_agent_test.scenarios.models import Scenario, Turn
@@ -94,12 +95,14 @@ class ScenarioRunner:
         simulator: WebhookSimulator,
         store: CaptureStore,
         truth: Mapping[str, TruthSource] | None = None,
+        judge: Judge | None = None,
         concurrency: int = 4,
         scenario_timeout_s: float = 300.0,
     ) -> None:
         self.sim = simulator
         self.store = store
         self.truth: Mapping[str, TruthSource] = truth or {}
+        self.judge = judge
         self.concurrency = max(1, concurrency)
         self.scenario_timeout_s = scenario_timeout_s
 
@@ -300,8 +303,14 @@ class ScenarioRunner:
             elif bot_messages or not rejected:
                 judged = bot_messages
         if judged is not None:
-            ctx = TurnContext(messages=judged, truth=self.truth)
-            checks.extend(check.evaluate(ctx) for check in turn.expect)
+            ctx = TurnContext(
+                messages=judged,
+                truth=self.truth,
+                user_message=turn.user_text,
+                judge=self.judge,
+            )
+            for check in turn.expect:
+                checks.append(await check.aevaluate(ctx))
 
         ok = error is None and all(c.passed for c in checks)
         result = finish(

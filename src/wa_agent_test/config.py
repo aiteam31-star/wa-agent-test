@@ -7,10 +7,19 @@ import re
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from wa_agent_test import yamlio
+from wa_agent_test.judges import (
+    AnthropicJudge,
+    CachedJudge,
+    FakeJudge,
+    Judge,
+    JudgeCache,
+    OllamaJudge,
+)
 from wa_agent_test.payloads import BusinessAccount
 from wa_agent_test.truth import FileTruthSource, TruthSource
 
@@ -59,12 +68,24 @@ class TruthSourceConfig(_Strict):
     fields: dict[str, str] = {}
 
 
+class JudgeConfig(_Strict):
+    """Which LLM judges `judge:` checks. Ollama (local, free) is the default."""
+
+    provider: Literal["ollama", "anthropic", "fake"] = "ollama"
+    model: str | None = None  # default: llama3.2:3b (ollama) / claude-haiku-5-5 (anthropic)
+    base_url: str | None = None
+    api_key: str | None = None  # anthropic only; use ${ANTHROPIC_API_KEY}
+    timeout_s: float = Field(180.0, gt=0)
+    cache_dir: str | None = ".wa-agent-test/judge-cache"  # relative to this file; null = no cache
+
+
 class ProjectConfig(_Strict):
     bot: BotConfig
     mock: MockConfig = MockConfig()
     run: RunConfig = RunConfig()
     business: BusinessConfig = BusinessConfig()
     truth_sources: dict[str, TruthSourceConfig] = {}
+    judge: JudgeConfig = JudgeConfig()
 
     def business_account(self) -> BusinessAccount:
         return BusinessAccount(**self.business.model_dump())
@@ -135,3 +156,33 @@ def build_truth_sources(config: ProjectConfig, base_dir: Path) -> dict[str, Trut
             file, records=cfg.records, entity_match=cfg.entity_match, fields=cfg.fields
         )
     return sources
+
+
+def build_judge(config: ProjectConfig, base_dir: Path, *, use_cache: bool = True) -> Judge:
+    """Create the configured judge, wrapped in the on-disk cache (unless it's the fake one).
+
+    The caller closes it with ``await judge.aclose()``.
+    """
+    jc = config.judge
+    inner: Judge
+    if jc.provider == "fake":
+        return FakeJudge()
+    client = httpx.AsyncClient(timeout=jc.timeout_s)
+    if jc.provider == "anthropic":
+        if not jc.api_key:
+            raise ConfigError("judge.provider is anthropic but judge.api_key is empty")
+        inner = AnthropicJudge(
+            api_key=jc.api_key,
+            model=jc.model or "claude-haiku-5-5",
+            client=client,
+            base_url=jc.base_url or "https://api.anthropic.com",
+        )
+    else:
+        inner = OllamaJudge(
+            model=jc.model or "llama3.2:3b",
+            client=client,
+            base_url=jc.base_url or "http://localhost:11434",
+        )
+    if use_cache and jc.cache_dir:
+        return CachedJudge(inner, JudgeCache(base_dir / jc.cache_dir))
+    return inner

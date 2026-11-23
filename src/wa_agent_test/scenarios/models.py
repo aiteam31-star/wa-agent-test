@@ -93,6 +93,18 @@ class Turn(BaseModel):
         )
 
     @property
+    def user_text(self) -> str:
+        """What the user says this turn, in plain words (for judges and reports)."""
+        if self.say is not None:
+            return self.say
+        if self.tap_button is not None:
+            return f"[taps the button {self.tap_button!r}]"
+        if self.pick_row is not None:
+            return f"[picks the list row {self.pick_row!r}]"
+        caption = self.send_image.caption if self.send_image else None
+        return f"[sends an image: {caption}]" if caption else "[sends an image]"
+
+    @property
     def label(self) -> str:
         kind = self.action_kind
         if kind == "send_image":

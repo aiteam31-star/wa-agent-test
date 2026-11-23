@@ -34,7 +34,7 @@ Package: `src/wa_agent_test/` (src layout, import name `wa_agent_test`, CLI `wa-
 | `scenarios/` | Pydantic models for scenarios, YAML loader (`for_each`, `file:line` errors), the asyncio `ScenarioRunner`, and plain-data run results. Reference: `docs/scenarios.md`. |
 | `assertions/` | `Assertion` protocol and implementations: deterministic (contains, regex, equals, count, order, message type, buttons, latency), fact (`truth/`), and judge (`judges/`). |
 | `truth/` | `TruthSource` protocol; built-ins: YAML/JSON file and generic HTTP endpoint. |
-| `judges/` | `Judge` protocol; adapters for Anthropic and OpenAI (optional extras, lazy imports). |
+| `judges/` | `Judge` protocol; Ollama (default), Anthropic and fake judges over plain HTTP; built-in rubrics; on-disk verdict cache. A `judge:` check asks one; `judge_eval.py` / `wa-agent-test judge-eval` measure its mistakes. |
 | `baseline/` | Save/load a run's normalized results; diff a new run against it (new failures, fixed, changed replies, score drift). |
 | `report/` | Jinja2 HTML report (self-contained single file) and JSON/JUnit output. |
 | `cli.py` | Typer app. Built: `run`, `validate`. Planned: `serve-mock`, `send`, `baseline save|diff`, `report`. Thin; no business logic. |

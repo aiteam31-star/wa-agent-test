@@ -9,6 +9,7 @@ from wa_agent_test.assertions.base import (
     TurnContext,
 )
 from wa_agent_test.assertions.facts import Extract, Fact, FactSpec
+from wa_agent_test.assertions.judge_check import DataRef, JudgeCheck, JudgeSpec
 from wa_agent_test.assertions.registry import REGISTRY, parse_check
 
 __all__ = [
@@ -17,9 +18,12 @@ __all__ = [
     "BotMessage",
     "Button",
     "CheckResult",
+    "DataRef",
     "Extract",
     "Fact",
     "FactSpec",
+    "JudgeCheck",
+    "JudgeSpec",
     "Row",
     "TurnContext",
     "parse_check",

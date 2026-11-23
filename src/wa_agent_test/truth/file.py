@@ -75,6 +75,10 @@ class FileTruthSource:
         why = "is ambiguous" if partial else "was not found"
         raise TruthError(f"entity {entity!r} {why} (known: {known})")
 
+    def dump(self, entity: str | None = None) -> Any:
+        """The whole record for ``entity``, or every record if ``entity`` is None (for judges)."""
+        return self._records if entity is None else self._find(entity)
+
     def lookup(self, entity: str, field: str) -> Any:
         record = self._find(entity)
         path = self._fields.get(field, field)

@@ -14,6 +14,15 @@ run:
   concurrency: 4
   seed: 1
 
+# Who judges `judge:` checks. Ollama runs locally and is free. To use Anthropic instead:
+#   provider: anthropic
+#   api_key: ${ANTHROPIC_API_KEY}
+# Verdicts are saved under cache_dir, so re-running a suite doesn't ask the judge again.
+judge:
+  provider: ollama
+  model: llama3.2:3b
+  cache_dir: .wa-agent-test/judge-cache
+
 # Where "correct" values come from for `fact` checks.
 truth_sources:
   ipos:
