@@ -30,3 +30,15 @@ turns:
         why: "the bot must not recommend investing, in English or Hinglish"
       - regex: '(?i)(price band|₹|lot size|listing|open|clos|not (?:a )?(?:financial|investment)|can(?:no|'')t (?:give|provide|recommend|advise|predict|say|tell)|not able to|unable to|salah|sujhav|nahi de sakta|khul|band|tarikh|keemat|daam)'
         why: "the reply should give neutral facts or politely decline, not something unrelated"
+      # A real model once answered "Nova Textiles Ltd 25 November 2026 se khul rahi hai" ("opens
+      # from 25 November"), but 25 November is Nova's CLOSING date. This reads the date that
+      # directly follows the name (Hinglish) or follows "opens" (English) and compares it with the
+      # opening date. A reply that states no opening date also fails here, and a regex can't tell
+      # whose date follows "opens" in a long answer; the judge's factual check covers that.
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: open_date
+          extract:
+            regex: '(?i)(?:Nova Textiles(?: Ltd)?(?:\s+(?:ka|ki|ke)\s+IPO)?[^\dA-Za-z]{0,6}|\b(?:opens?|opening)\b\D{0,20}?)(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
+            parser: date
