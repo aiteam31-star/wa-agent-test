@@ -363,3 +363,19 @@ def test_fact_definition_errors_are_caught_at_load_time() -> None:
         parse_check(fact(group=2))
     with pytest.raises(ValueError, match="parser"):
         parse_check(fact(parser="magic"))
+
+
+def test_why_text_explains_a_failure_and_keeps_the_detail() -> None:
+    check = parse_check({"not_contains": "%", "why": "subscription must be in times"})
+    ctx = TurnContext([msg("Total: 7.1%")], truth())
+    result = check.evaluate(ctx)
+    assert not result.passed
+    assert result.message.startswith("subscription must be in times (reply must not contain ['%']")
+    assert (
+        check.evaluate(TurnContext([msg("Total: 7.1x")], truth())).message == "reply avoids ['%']"
+    )
+
+
+def test_why_is_accepted_alongside_in() -> None:
+    check = parse_check({"contains": "x", "in": "last", "why": "because"})
+    assert check.scope == "last" and check.why == "because"

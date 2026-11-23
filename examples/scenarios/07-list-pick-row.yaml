@@ -17,5 +17,5 @@ turns:
           entity: "Bharat GreenGrid"
           field: close_date
           extract:
-            regex: 'closes (\d{1,2} \w+ \d{4})'
+            regex: '(?i)clos\w*\D{0,30}?(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date

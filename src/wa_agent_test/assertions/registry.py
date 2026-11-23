@@ -45,17 +45,18 @@ def parse_check(item: Any) -> Assertion:
         raise ValueError("must be a mapping such as {contains: 'text'}")
     data = dict(item)
     scope = data.pop("in", "all")
+    why = data.pop("why", None)
     if "judge" in data:
         raise ValueError("'judge' checks are not available yet (planned for a later stage)")
     if len(data) != 1:
         found = sorted(data) or "nothing"
-        raise ValueError(f"needs exactly one check (plus optional 'in'), found {found}")
+        raise ValueError(f"needs exactly one check (plus optional 'in' and 'why'), found {found}")
     ((kind, value),) = data.items()
     cls = REGISTRY.get(str(kind))
     if cls is None:
         raise ValueError(f"unknown check {kind!r}; known checks: {', '.join(sorted(REGISTRY))}")
     try:
-        return cls(value=value, scope=scope)  # type: ignore[call-arg]
+        return cls(value=value, scope=scope, why=why)  # type: ignore[call-arg]
     except ValidationError as exc:
         details = "; ".join(
             f"{'.'.join(str(p) for p in e['loc'] if p != 'value')}: {e['msg']}".lstrip(": ")

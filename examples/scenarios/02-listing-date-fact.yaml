@@ -13,5 +13,8 @@ turns:
           entity: "{{ ipo }}"
           field: listing_date
           extract:
-            regex: 'listing date is (\d{1,2} \w+ \d{4})'
+            # Finds "listing date is 30 November 2026", "listed on NSE & BSE from 30th November
+            # 2026" or "Listing: November 30, 2026". Looks within 30 characters after the word
+            # "list..." so the open/close dates in a longer answer aren't picked up by mistake.
+            regex: '(?i)list\w*\D{0,30}?(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date

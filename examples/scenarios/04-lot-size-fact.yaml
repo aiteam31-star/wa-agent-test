@@ -10,5 +10,6 @@ turns:
           entity: "Nova Textiles"
           field: lot_size
           extract:
-            regex: 'lot size (\d+) shares'
+            # "lot size 67 shares", "The lot size for Nova Textiles is 67."
+            regex: '(?i)lot size\D{0,30}?(\d[\d,]*)'
             parser: number

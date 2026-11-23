@@ -81,6 +81,7 @@ class Assertion(BaseModel):
 
     kind: ClassVar[str]
     scope: Scope = "all"
+    why: str | None = None  # optional explanation shown when the check fails
 
     def check(self, selected: list[BotMessage], ctx: TurnContext) -> tuple[bool, str]:
         raise NotImplementedError
@@ -91,4 +92,6 @@ class Assertion(BaseModel):
         except ScopeError as exc:
             return CheckResult(kind=self.kind, passed=False, message=str(exc))
         passed, message = self.check(selected, ctx)
+        if not passed and self.why:
+            message = f"{self.why} ({message})"
         return CheckResult(kind=self.kind, passed=passed, message=message)

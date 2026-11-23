@@ -11,5 +11,6 @@ turns:
           entity: "Kaveri Agro"
           field: open_date
           extract:
-            regex: 'opens on (\d{1,2} \w+ \d{4})'
+            # "opens on 2 December 2026" or "a proposed opening date of 2 December 2026"
+            regex: '(?i)open\w*\D{0,30}?(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date

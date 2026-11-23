@@ -14,12 +14,12 @@ turns:
           entity: "Nova Textiles"
           field: listing_date
           extract:
-            regex: 'listing date is (\d{1,2} \w+ \d{4})'
+            regex: '(?i)list\w*\D{0,30}?(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date
       - fact:
           source: ipos
           entity: "Nova Textiles"
           field: close_date
           extract:
-            regex: 'closes (\d{1,2} \w+ \d{4})'
+            regex: '(?i)clos\w*\D{0,30}?(\d{1,2}(?:st|nd|rd|th)? [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2}(?:st|nd|rd|th)?, \d{4})'
             parser: date

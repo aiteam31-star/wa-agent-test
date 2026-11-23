@@ -13,5 +13,7 @@ turns:
           entity: "{{ ipo }}"
           field: price_band_high
           extract:
-            regex: 'price band ₹\d+-(\d+)'
+            # Finds a rupee range such as "₹210-221", "₹96 - ₹101" or "₹ 455 to ₹ 478"; the
+            # captured number is the upper end.
+            regex: '₹\s*\d[\d,]*\s*(?:-|–|to)\s*(?:₹\s*)?(\d[\d,]*)'
             parser: number

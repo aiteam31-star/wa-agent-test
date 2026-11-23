@@ -1,5 +1,5 @@
 name: tap-subscription-button
-description: Tap the Subscription button; the subscription numbers must match the data.
+description: Tap the Subscription button; the numbers must match the data and be given in times (x), not percent.
 tags: [ipo, buttons, facts]
 
 turns:
@@ -8,17 +8,21 @@ turns:
   - tap_button: "Subscription"
     expect:
       - contains: ["QIB", "retail"]
+      # Subscription is "times subscribed" (7.1x). A percent sign means the bot got the unit wrong.
+      - not_contains: "%"
+        why: "subscription must be given in times (like 7.1x), not percent"
       - fact:
           source: ipos
           entity: "Nova Textiles"
           field: subscription_total
           extract:
-            regex: 'overall (\d+(?:\.\d+)?)x'
+            # "overall 7.1x" or "Total: 7.1%": takes the number, the unit is checked above
+            regex: '(?i)(?:overall|total)\D{0,20}?(\d+(?:\.\d+)?)'
             parser: number
       - fact:
           source: ipos
           entity: "Nova Textiles"
           field: subscription_retail
           extract:
-            regex: 'retail (\d+(?:\.\d+)?)x'
+            regex: '(?i)retail\D{0,20}?(\d+(?:\.\d+)?)'
             parser: number

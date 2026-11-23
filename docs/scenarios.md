@@ -49,7 +49,12 @@ By default the runner waits for the first bot message, then until the bot has be
 
 ## Checks (`expect:`)
 
-Each item has one check, plus an optional `in:` to choose which bot messages it looks at (`all` is the default; `first`, `last`, or a number such as `0` or `-1`).
+Each item has one check, plus two optional keys: `in:` chooses which bot messages it looks at (`all` is the default; `first`, `last`, or a number such as `0` or `-1`), and `why:` is a sentence shown before the details when the check fails, so a failure can say exactly what is wrong:
+
+```yaml
+- not_contains: "%"
+  why: "subscription must be given in times (like 7.1x), not percent"
+```
 
 | Check | Passes when |
 |---|---|
@@ -80,6 +85,8 @@ A fact check compares a value in the reply with the correct value from a **truth
       parser: date                # date | number | currency | text   (default: text)
     # tolerance: 0.5              # numbers only
 ```
+
+Write the pattern for how a real LLM might phrase the answer, not just one wording. The demo scenarios accept `listing date is 30 November 2026`, `listed ... from 30th November 2026` and `Listing: November 30, 2026` alike, with `(?i)` for case and a short `\D{0,30}?` gap so a nearby, different date isn't picked up by mistake. Check a unit with a separate check (like the `%` example above) so each failure names one thing.
 
 It **fails** (never passes silently) when:
 - the pattern finds nothing: `couldn't find a listing date in the reply (pattern ... didn't match: ...)`;

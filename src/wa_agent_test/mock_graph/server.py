@@ -33,6 +33,9 @@ class MockGraphServer:
             log_level="warning",
             access_log=False,
             lifespan="off",
+            # A slow bot (a local LLM can think for 10s+) reuses its connection to us. uvicorn's
+            # 5s default closes idle connections and caused ReadError on the bot's next send.
+            timeout_keep_alive=120,
         )
         server = uvicorn.Server(config)
         self._server = server

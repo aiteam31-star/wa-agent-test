@@ -1,5 +1,5 @@
 name: follow-up-memory
-description: The bot remembers which IPO we were talking about ("its subscription").
+description: The bot remembers which IPO we were talking about ("its subscription"), in the right unit.
 tags: [ipo, memory, facts]
 
 turns:
@@ -10,10 +10,12 @@ turns:
   - say: "and its subscription?"
     expect:
       - contains: "Nova Textiles"
+      - not_contains: "%"
+        why: "subscription must be given in times (like 7.1x), not percent"
       - fact:
           source: ipos
           entity: "Nova Textiles"
           field: subscription_total
           extract:
-            regex: 'overall (\d+(?:\.\d+)?)x'
+            regex: '(?i)(?:overall|total)\D{0,20}?(\d+(?:\.\d+)?)'
             parser: number

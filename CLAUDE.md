@@ -69,6 +69,7 @@ The schema is final for v1 and documented in [docs/scenarios.md](docs/scenarios.
 - Rejected sends (the mock enforces Meta's limits) **fail the turn by default**; opt out with `allow_rejected: true`.
 - Fact checks are declarative: the scenario names the entity and field and supplies the regex/parser. A claim that can't be found, can't be parsed, or differs from the truth is a **failure**; never make a fact check pass silently.
 - `for_each` takes one variable; `{{ var }}` substitution is plain text replacement (not Jinja) done before validation.
+- Write fact regexes for how a real LLM phrases things (several wordings, `(?i)`, bounded gaps), and check units with a separate check using `why:` so failures name one thing. `tests/unit/test_example_patterns.py` pins the example patterns to real model sentences.
 - Unknown keys are errors (`extra="forbid"`); errors carry `file:line`.
 
 ## Conventions
