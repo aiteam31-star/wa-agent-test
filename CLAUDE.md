@@ -43,7 +43,7 @@ Outside the package:
 
 | Path | Responsibility |
 |---|---|
-| `demo_bot/` | Demo WhatsApp Cloud API bot answering questions about 5 fictional Indian IPOs from `demo_bot/data/ipos.json`, with a pluggable LLM provider (Anthropic, OpenAI, local Ollama, plus a deterministic `fake` for tests/CI). `BUGGY_MODE` injects three known defects (wrong listing date, 4 buttons instead of Meta's max 3, "you should apply" advice) that the harness must catch. Not part of the installed package; its fixture doubles as a truth source. |
+| `demo_bot/` | Demo WhatsApp Cloud API bot answering questions about 5 fictional Indian IPOs from `demo_bot/data/ipos.json`, with a pluggable LLM provider (Anthropic, local Ollama, plus a deterministic `fake` for tests/CI; all via plain HTTP, with tool calls). `BUGGY_MODE` injects three known defects (wrong listing date, 4 buttons instead of Meta's max 3, "you should apply" advice) that the harness must catch. Not part of the installed package; its fixture doubles as a truth source. |
 | `examples/echo_bot/` | Minimal echo bot used for the mock Graph API integration test. |
 
 ## Key design rules
@@ -84,7 +84,7 @@ Once decided, the schema is defined by pydantic models in `scenarios/models.py`;
 
 ## Conventions
 
-- Python 3.11+, full type hints, `mypy --strict` clean on `src/`.
+- Python 3.11+, full type hints, `mypy --strict` clean on `src/` and `demo_bot/`.
 - `ruff check` and `ruff format` (line length 100). Run before finishing any change.
 - Pydantic v2 models; use `model_config = ConfigDict(extra="forbid")` for user-authored config so typos fail loudly.
 - Public API is whatever is re-exported from `wa_agent_test/__init__.py` and subpackage `__init__.py`; everything else is private.
@@ -99,7 +99,7 @@ pip install -e ".[dev]"      # install with dev tools
 pytest                       # unit + integration (llm tests skipped)
 pytest -m "not integration"  # fast loop
 ruff check . ; ruff format .
-mypy src
+mypy                         # src/ and demo_bot/ (see pyproject)
 ```
 
 ## Out of scope (for now)

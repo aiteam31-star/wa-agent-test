@@ -1,6 +1,6 @@
 # PLAN.md
 
-Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stages 0-2 are done.
+Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stages 0-3 are done.
 
 ## Stage 0 — Scaffold ✅
 Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, empty packages, import smoke test.
@@ -31,12 +31,12 @@ Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, emp
 **Delivered:** `POST /{version}/{phone_number_id}/messages` for text, interactive (button/list) and template; limits in one file (`mock_graph/limits.yaml`, each marked confirmed/conflicting/unconfirmed); rejected requests logged and recorded; capture store with `wait_for_count`; bearer-token check; `MockGraphServer` (real ephemeral port), tested over real HTTP.
 **Carried over (not built):** image/audio/document/reaction message bodies and mark-as-read; `wait_for_quiescence`; fault injection; `serve-mock` CLI command (Stage 9); the `examples/echo_bot/` end-to-end test (the Stage 3 demo bot supersedes it).
 
-## Stage 3 — Demo bot (`demo_bot/`)
+## Stage 3 — Demo bot (`demo_bot/`) ✅
 A realistic WhatsApp Cloud API bot to test the harness against, answering questions about **5 fictional Indian IPOs**.
 
 - **Data:** `demo_bot/data/ipos.json` fixture with 5 fictional IPOs (name, issue dates, price band, lot size, listing date, exchange, registrar, status). This file is also the truth source for fact checks in Stage 6.
 - **Bot:** FastAPI app with GET verification handshake, POST webhook (signature verified), replies sent via the Graph API at a configurable base URL (so it can point at the mock). Handles text questions and button/list replies; offers up to 3 reply buttons (e.g. "Dates", "Price band", "Another IPO").
-- **LLM behind a pluggable provider:** `LLMProvider` protocol with Anthropic, OpenAI and local Ollama implementations, selected by `LLM_PROVIDER`; the IPO fixture is supplied to the model as context. A `fake` provider (canned/deterministic) is used in tests and CI so no keys or network are needed.
+- **LLM behind a pluggable provider, with tool calls:** `LLMProvider` protocol with Anthropic and local Ollama implementations (plain HTTP, no SDKs; OpenAI dropped), selected by `LLM_PROVIDER`. The model calls `list_open_ipos()`, `get_ipo_details(name)` and `get_subscription_status(name)`, which read the fixture. A `fake` provider (deterministic, still calls the tools) is the default and is used in tests and CI so no keys or network are needed.
 - **`BUGGY_MODE` flag** injects three deliberate defects, each triggerable independently and deterministically for tests (`BUGGY_FORCE=listing_date,buttons,advice`) or probabilistically ("sometimes") with a seeded `BUGGY_RATE`:
   1. **Wrong listing date**: states a listing date that differs from the fixture.
   2. **Four buttons**: sends 4 reply buttons (Meta allows 3).
@@ -44,6 +44,9 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 - Own README with run instructions; dependencies kept as an optional extra so the core harness stays light.
 
 **Exit:** with `BUGGY_MODE` off, the bot answers correctly for all 5 IPOs under the fake provider; with each forced defect on, the bot demonstrably produces it (unit-tested). Catching all three with the harness is the exit criterion of Stage 6 (see below).
+
+**Delivered:** the bot as specified, per-user in-memory history, reply messages as a list (open IPOs) / text + 3 buttons (one IPO) / plain text, duplicate-delivery and status-webhook handling, and tests including simulator -> bot -> mock Graph API runs where each defect is visible (wrong date in the text, 4 buttons rejected and recorded by the mock, "you should apply" in the text). Smoke-tested over real sockets.
+**Not yet verified:** the Anthropic and Ollama providers are tested against mocked HTTP only, never a real model.
 
 ## Stage 4 — Scenario model and runner
 - **Finalise the scenario YAML schema at the start of this stage** (not before). Whatever it looks like, it must support:

@@ -1,0 +1,75 @@
+{
+  "_disclaimer": "All companies and figures are fictional, for testing wa-agent-test only. Not investment data.",
+  "ipos": [
+    {
+      "slug": "nova-textiles",
+      "name": "Nova Textiles Ltd",
+      "short_name": "Nova Textiles",
+      "sector": "Textiles",
+      "exchange": "NSE & BSE",
+      "issue_size_cr": 640.0,
+      "price_band": {"low": 210, "high": 221},
+      "lot_size": 67,
+      "registrar": "Linkwell Registry Pvt Ltd",
+      "status": "open",
+      "dates": {"open": "2026-11-20", "close": "2026-11-25", "allotment": "2026-11-26", "listing": "2026-11-30"},
+      "subscription": {"as_of": "2026-11-23", "qib": 12.4, "nii": 8.7, "retail": 3.2, "employee": 1.9, "total": 7.1}
+    },
+    {
+      "slug": "bharat-greengrid",
+      "name": "Bharat GreenGrid Energy Ltd",
+      "short_name": "Bharat GreenGrid",
+      "sector": "Renewable energy",
+      "exchange": "NSE & BSE",
+      "issue_size_cr": 1850.0,
+      "price_band": {"low": 96, "high": 101},
+      "lot_size": 148,
+      "registrar": "Linkwell Registry Pvt Ltd",
+      "status": "open",
+      "dates": {"open": "2026-11-21", "close": "2026-11-26", "allotment": "2026-11-27", "listing": "2026-12-01"},
+      "subscription": {"as_of": "2026-11-23", "qib": 2.1, "nii": 1.4, "retail": 4.8, "employee": 0.6, "total": 2.6}
+    },
+    {
+      "slug": "kaveri-agro",
+      "name": "Kaveri Agro Foods Ltd",
+      "short_name": "Kaveri Agro",
+      "sector": "Agri & food processing",
+      "exchange": "BSE SME",
+      "issue_size_cr": 92.5,
+      "price_band": {"low": 118, "high": 124},
+      "lot_size": 1000,
+      "registrar": "Deccan Share Services Ltd",
+      "status": "upcoming",
+      "dates": {"open": "2026-12-02", "close": "2026-12-04", "allotment": "2026-12-07", "listing": "2026-12-09"},
+      "subscription": null
+    },
+    {
+      "slug": "sahyadri-fintech",
+      "name": "Sahyadri Fintech Ltd",
+      "short_name": "Sahyadri Fintech",
+      "sector": "Financial technology",
+      "exchange": "NSE & BSE",
+      "issue_size_cr": 1200.0,
+      "price_band": {"low": 330, "high": 348},
+      "lot_size": 43,
+      "registrar": "Deccan Share Services Ltd",
+      "status": "closed",
+      "dates": {"open": "2026-11-12", "close": "2026-11-16", "allotment": "2026-11-19", "listing": "2026-11-24"},
+      "subscription": {"as_of": "2026-11-16", "qib": 61.3, "nii": 38.9, "retail": 9.4, "employee": 4.2, "total": 33.8}
+    },
+    {
+      "slug": "marwar-cement",
+      "name": "Marwar Cement Ltd",
+      "short_name": "Marwar Cement",
+      "sector": "Building materials",
+      "exchange": "NSE & BSE",
+      "issue_size_cr": 880.0,
+      "price_band": {"low": 455, "high": 478},
+      "lot_size": 31,
+      "registrar": "Linkwell Registry Pvt Ltd",
+      "status": "listed",
+      "dates": {"open": "2026-11-02", "close": "2026-11-05", "allotment": "2026-11-09", "listing": "2026-11-11"},
+      "subscription": {"as_of": "2026-11-05", "qib": 24.7, "nii": 15.2, "retail": 5.9, "employee": 2.8, "total": 14.6}
+    }
+  ]
+}

@@ -64,6 +64,7 @@ minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]  # lets tests import the demo_bot package at the repo root
 addopts = "-ra --strict-markers"
 markers = [
   "integration: spins up local servers (mock Graph API / sample bot)",
@@ -73,7 +74,7 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
@@ -82,7 +83,7 @@ select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["src"]
+files = ["src", "demo_bot"]
 
 [tool.coverage.run]
 source = ["wa_agent_test"]
