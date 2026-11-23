@@ -1,0 +1,17 @@
+name: "price-band-fact: {{ ipo }}"
+description: The upper price band the bot states matches the data, for every IPO.
+tags: [ipo, facts]
+
+for_each:
+  ipo: ["Nova Textiles", "Bharat GreenGrid", "Kaveri Agro", "Sahyadri Fintech", "Marwar Cement"]
+
+turns:
+  - say: "What is the price band of {{ ipo }}?"
+    expect:
+      - fact:
+          source: ipos
+          entity: "{{ ipo }}"
+          field: price_band_high
+          extract:
+            regex: 'price band ₹\d+-(\d+)'
+            parser: number

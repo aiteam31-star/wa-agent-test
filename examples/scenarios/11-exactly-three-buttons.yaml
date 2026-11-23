@@ -1,0 +1,15 @@
+name: "exactly-three-buttons: {{ ipo }}"
+description: >-
+  WhatsApp allows at most 3 reply buttons. The bot offers exactly the 3 expected ones. (Even
+  without this check, a 4th button makes the turn fail, because the mock rejects it.)
+tags: [ipo, buttons, limits]
+
+for_each:
+  ipo: ["Nova Textiles", "Bharat GreenGrid", "Kaveri Agro"]
+
+turns:
+  - say: "Tell me about {{ ipo }}"
+    expect_messages: 1
+    expect:
+      - button_count: 3
+      - button_titles: ["Dates", "Price band", "Subscription"]

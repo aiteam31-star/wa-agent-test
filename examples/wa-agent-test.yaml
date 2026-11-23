@@ -1,0 +1,33 @@
+# Project config for the demo bot. Run (bot must be running, see demo_bot/README.md):
+#   wa-agent-test run examples/scenarios
+bot:
+  webhook_url: http://127.0.0.1:8000/webhook
+  app_secret: ${APP_SECRET:-dev-app-secret}
+  verify_token: ${VERIFY_TOKEN:-dev-verify-token}
+
+# The mock Graph API starts here; start the bot with GRAPH_API_BASE_URL=http://127.0.0.1:9000
+mock:
+  host: 127.0.0.1
+  port: 9000
+
+run:
+  concurrency: 4
+  seed: 1
+
+# Where "correct" values come from for `fact` checks.
+truth_sources:
+  ipos:
+    type: file
+    path: ../demo_bot/data/ipos.json
+    records: ipos
+    entity_match: [name, short_name]
+    fields:
+      listing_date: dates.listing
+      open_date: dates.open
+      close_date: dates.close
+      allotment_date: dates.allotment
+      price_band_low: price_band.low
+      price_band_high: price_band.high
+      lot_size: lot_size
+      subscription_total: subscription.total
+      subscription_retail: subscription.retail

@@ -1,0 +1,15 @@
+name: upcoming-ipo-no-subscription
+description: An IPO that hasn't opened has no subscription data; the bot must say so, not invent numbers.
+tags: [ipo, facts, honesty]
+
+turns:
+  - say: "What is the subscription status of Kaveri Agro?"
+    expect:
+      - not_contains: ["QIB", "retail", "overall"]
+      - fact:
+          source: ipos
+          entity: "Kaveri Agro"
+          field: open_date
+          extract:
+            regex: 'opens on (\d{1,2} \w+ \d{4})'
+            parser: date

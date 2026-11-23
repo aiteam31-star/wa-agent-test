@@ -1,0 +1,11 @@
+name: open-ipos-list
+description: Asking which IPOs are open gets one list message naming exactly the open IPOs.
+tags: [ipo, lists, smoke]
+
+turns:
+  - say: "Which IPOs are open?"
+    expect_messages: 1
+    expect:
+      - message_type: interactive
+      - contains: ["Nova Textiles", "Bharat GreenGrid"]
+      - not_contains: ["Kaveri", "Sahyadri", "Marwar"]

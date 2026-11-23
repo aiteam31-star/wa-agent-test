@@ -1,0 +1,14 @@
+name: lot-size-fact
+description: The lot size the bot states matches the data.
+tags: [ipo, facts]
+
+turns:
+  - say: "What is the lot size for Nova Textiles?"
+    expect:
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: lot_size
+          extract:
+            regex: 'lot size (\d+) shares'
+            parser: number

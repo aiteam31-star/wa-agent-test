@@ -1,0 +1,19 @@
+name: follow-up-memory
+description: The bot remembers which IPO we were talking about ("its subscription").
+tags: [ipo, memory, facts]
+
+turns:
+  - say: "Tell me about Nova Textiles"
+    expect:
+      - contains: "Nova Textiles"
+
+  - say: "and its subscription?"
+    expect:
+      - contains: "Nova Textiles"
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: subscription_total
+          extract:
+            regex: 'overall (\d+(?:\.\d+)?)x'
+            parser: number

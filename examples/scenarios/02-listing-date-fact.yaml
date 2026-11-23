@@ -1,0 +1,17 @@
+name: "listing-date-fact: {{ ipo }}"
+description: The listing date the bot states matches the data, for every IPO.
+tags: [ipo, facts]
+
+for_each:
+  ipo: ["Nova Textiles", "Bharat GreenGrid", "Kaveri Agro", "Sahyadri Fintech", "Marwar Cement"]
+
+turns:
+  - say: "When does {{ ipo }} list?"
+    expect:
+      - fact:
+          source: ipos
+          entity: "{{ ipo }}"
+          field: listing_date
+          extract:
+            regex: 'listing date is (\d{1,2} \w+ \d{4})'
+            parser: date

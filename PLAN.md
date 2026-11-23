@@ -1,6 +1,6 @@
 # PLAN.md
 
-Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stages 0-3 are done.
+Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stages 0-6 are done (4-6 as one piece of work; see their notes).
 
 ## Stage 0 — Scaffold ✅
 Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, empty packages, import smoke test.
@@ -48,7 +48,7 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 **Delivered:** the bot as specified, per-user in-memory history, reply messages as a list (open IPOs) / text + 3 buttons (one IPO) / plain text, duplicate-delivery and status-webhook handling, and tests including simulator -> bot -> mock Graph API runs where each defect is visible (wrong date in the text, 4 buttons rejected and recorded by the mock, "you should apply" in the text). Smoke-tested over real sockets.
 **Not yet verified:** the Anthropic and Ollama providers are tested against mocked HTTP only, never a real model.
 
-## Stage 4 — Scenario model and runner
+## Stage 4 — Scenario model and runner ✅
 - **Finalise the scenario YAML schema at the start of this stage** (not before). Whatever it looks like, it must support:
   - multi-turn conversations;
   - button and list replies (user taps a button/row from a previous bot message);
@@ -62,18 +62,25 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 
 **Exit:** `wa-agent-test run examples/scenarios/` runs scenarios in parallel against the demo bot (clean mode) and prints a transcript summary.
 
-## Stage 5 — Deterministic assertions
+**Delivered:** the final schema (see `docs/scenarios.md`): `say` / `tap_button` / `pick_row` / `send_image` turns, `expect_messages`, per-turn and default `timeout_s` / `settle_ms`, `allow_rejected` (rejected sends fail the turn by default), one scenario per file, `for_each` expansion, `file:line` errors, YAML where only `true`/`false` are booleans; `ScenarioRunner` (parallel, bounded, one simulated user per scenario, quiescence-based waiting, overall timeout); plain-data `RunResult`; `wa-agent-test run` (filters, `--json`, exit codes 0/1/2/3) and `validate`; `wa-agent-test.yaml` project config with `${ENV}` interpolation; 15 demo-bot scenario files (25 scenarios after `for_each`).
+**Carried over:** `--fail-fast`, `--junit`, `serve-mock`, `send` and `report` commands; templating of runtime values such as `{{ user.wa_id }}`; running a scenario several times.
+
+## Stage 5 — Deterministic assertions ✅
 - `Assertion` protocol, registry, entry-point discovery.
 - Built-ins: `contains`, `not_contains`, `equals`, `regex`, `message_count`, `message_type`, `button_count`/`button_titles`, `reply_within_ms`, `order`, `language` (optional), JSONPath on raw payloads; plus an assertion on rejected requests recorded by the mock (Stage 2).
 - Clear failure messages with expected/actual excerpts.
 
 **Exit:** scenarios can pass/fail on deterministic checks; unit tests cover each assertion. Demo-bot defects 2 (four buttons) and 3 ("you should apply") are caught here.
 
-## Stage 6 — Fact checks and truth sources
+**Delivered:** `contains`, `not_contains`, `equals`, `regex`, `message_count`, `message_type`, `button_count`, `button_titles`, `reply_within_ms`, with `in:` message selection; rejected requests fail turns by default. **Carried over:** `order`, `language`, JSONPath on raw payloads, entry-point discovery of third-party assertions.
+
+## Stage 6 — Fact checks and truth sources ✅
 - `TruthSource` protocol; YAML/JSON file source and HTTP endpoint source (auth headers, caching, timeouts).
 - **Declarative fact assertions (v1).** Each `fact` assertion names the **entity** and the **field**, looks the expected value up in the truth source, and extracts the *claimed* value from the reply using a **regex or simple parser defined in the assertion itself** (e.g. a date, number, or currency parser). Values are normalized before comparison (dates, numbers, currency). No LLM is involved: deterministic, free, and easy to debug.
 - Truth lookups and extracted claims are recorded in results (expected, extracted, match).
 - A fact assertion fails clearly when the claim cannot be extracted (distinct from a wrong value).
+
+**Delivered:** `TruthSource` protocol, `FileTruthSource` (JSON/YAML), declarative `fact` checks (date/number/currency/text parsers, tolerance). A claim the regex can't find is a failure, never a silent pass. **Carried over:** the HTTP truth source (auth headers, caching, timeouts).
 
 **Exit:** a scenario can assert reply values against a truth source; both built-in sources tested. **All three demo-bot defects are caught** end to end: clean mode passes the demo scenario suite; each forced defect makes the suite fail on exactly the expected assertion (wrong listing date via fact check, four buttons, "you should apply").
 

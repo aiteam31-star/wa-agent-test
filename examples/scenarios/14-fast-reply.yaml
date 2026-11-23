@@ -1,0 +1,13 @@
+name: fast-reply
+description: A simple question gets one reply quickly (raise the limits when testing a slow local model).
+tags: [ipo, performance]
+
+defaults:
+  timeout_s: 10
+
+turns:
+  - say: "Which IPOs are open?"
+    expect_messages: 1
+    expect:
+      - reply_within_ms: 5000
+      - message_count: 1

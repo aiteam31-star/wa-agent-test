@@ -1,0 +1,24 @@
+name: tap-subscription-button
+description: Tap the Subscription button; the subscription numbers must match the data.
+tags: [ipo, buttons, facts]
+
+turns:
+  - say: "Tell me about Nova Textiles"
+
+  - tap_button: "Subscription"
+    expect:
+      - contains: ["QIB", "retail"]
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: subscription_total
+          extract:
+            regex: 'overall (\d+(?:\.\d+)?)x'
+            parser: number
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: subscription_retail
+          extract:
+            regex: 'retail (\d+(?:\.\d+)?)x'
+            parser: number

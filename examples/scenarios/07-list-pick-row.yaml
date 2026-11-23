@@ -1,0 +1,21 @@
+name: list-pick-row
+description: Pick an IPO from the open-IPO list; the bot answers about that IPO with correct dates.
+tags: [ipo, lists, facts]
+
+turns:
+  - say: "Which IPOs are open?"
+    expect_messages: 1
+    expect:
+      - message_type: interactive
+
+  - pick_row: "Bharat GreenGrid"
+    expect_messages: 1
+    expect:
+      - contains: "Bharat GreenGrid Energy Ltd"
+      - fact:
+          source: ipos
+          entity: "Bharat GreenGrid"
+          field: close_date
+          extract:
+            regex: 'closes (\d{1,2} \w+ \d{4})'
+            parser: date

@@ -1,0 +1,11 @@
+name: unsupported-image
+description: The bot only reads text; an image gets a polite explanation, not silence or a crash.
+tags: [ipo, robustness]
+
+turns:
+  - send_image:
+      caption: "my PAN card"
+    expect_messages: 1
+    expect:
+      - message_type: text
+      - contains: "can only read text"

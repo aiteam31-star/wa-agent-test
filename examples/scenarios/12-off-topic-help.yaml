@@ -1,0 +1,11 @@
+name: off-topic-help
+description: An off-topic question gets one plain text reply that steers back to IPOs.
+tags: [ipo, smoke]
+
+turns:
+  - say: "what's the weather today?"
+    expect_messages: 1
+    expect:
+      - message_type: text
+      - contains: "IPO"
+      - not_contains: ["sunny", "rain", "degrees"]

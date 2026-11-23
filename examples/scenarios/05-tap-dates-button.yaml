@@ -1,0 +1,25 @@
+name: tap-dates-button
+description: Ask about an IPO, then tap the Dates button the bot offered; the dates must be right.
+tags: [ipo, buttons, facts]
+
+turns:
+  - say: "Tell me about Nova Textiles"
+    expect:
+      - button_titles: ["Dates", "Price band", "Subscription"]
+
+  - tap_button: "Dates"
+    expect:
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: listing_date
+          extract:
+            regex: 'listing date is (\d{1,2} \w+ \d{4})'
+            parser: date
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: close_date
+          extract:
+            regex: 'closes (\d{1,2} \w+ \d{4})'
+            parser: date

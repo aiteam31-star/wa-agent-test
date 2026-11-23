@@ -31,13 +31,14 @@ Package: `src/wa_agent_test/` (src layout, import name `wa_agent_test`, CLI `wa-
 | `payloads/` | Pure builders for Meta inbound webhook payloads (text, image/audio/document, interactive button/list replies, location, reactions, `statuses`) and `X-Hub-Signature-256` signing. No I/O. |
 | `simulator/` | httpx client that delivers payloads to the bot's webhook URL; also handles the GET `hub.challenge` verification handshake. |
 | `mock_graph/` | FastAPI app mimicking `POST /{version}/{phone_number_id}/messages` (plus media/mark-as-read endpoints as needed). Validates the body shape, returns Meta-like responses (`messaging_product`, `contacts`, `messages[].id`), stores captured messages in a per-run, per-conversation store. Supports fault injection (HTTP errors, latency). |
-| `scenarios/` | Pydantic models for scenarios, YAML loader with clear error locations, and the asyncio runner (turns, waiting for replies, parallelism). |
+| `scenarios/` | Pydantic models for scenarios, YAML loader (`for_each`, `file:line` errors), the asyncio `ScenarioRunner`, and plain-data run results. Reference: `docs/scenarios.md`. |
 | `assertions/` | `Assertion` protocol and implementations: deterministic (contains, regex, equals, count, order, message type, buttons, latency), fact (`truth/`), and judge (`judges/`). |
 | `truth/` | `TruthSource` protocol; built-ins: YAML/JSON file and generic HTTP endpoint. |
 | `judges/` | `Judge` protocol; adapters for Anthropic and OpenAI (optional extras, lazy imports). |
 | `baseline/` | Save/load a run's normalized results; diff a new run against it (new failures, fixed, changed replies, score drift). |
 | `report/` | Jinja2 HTML report (self-contained single file) and JSON/JUnit output. |
-| `cli.py` | Typer app: `run`, `serve-mock`, `send`, `baseline save|diff`, `report`, `validate`. Thin; no business logic. |
+| `cli.py` | Typer app. Built: `run`, `validate`. Planned: `serve-mock`, `send`, `baseline save|diff`, `report`. Thin; no business logic. |
+| `config.py`, `yamlio.py` | Project config (`wa-agent-test.yaml`, `${ENV}` interpolation); YAML loading where only `true`/`false` are booleans (so `tap_button: Yes` stays text). |
 
 Outside the package:
 
@@ -60,27 +61,15 @@ Outside the package:
 10. **The mock enforces Meta's limits and records violations.** E.g. more than 3 reply buttons returns a Meta-style 400 and the rejected attempt is stored so assertions can fail on it. Don't silently accept payloads Meta would reject.
 11. **Secrets** (API keys, app secret) come from environment variables or the config file's `${ENV_VAR}` references; never written to reports or baselines.
 
-## Scenario YAML (illustrative only; schema is finalised at the start of Stage 4)
+## Scenario YAML
 
-The exact schema is intentionally **not decided yet**. Do not build on this sketch. Whatever is chosen must support: multi-turn conversations, button/list replies, multiple bot messages per turn, and per-turn timeouts.
+The schema is final for v1 and documented in [docs/scenarios.md](docs/scenarios.md); the pydantic models in `scenarios/models.py` are the source of truth. Decisions to keep:
 
-```yaml
-name: ipo-listing-date
-turns:
-  - user: "When does Nova Textiles list?"
-    timeout_s: 20
-    expect:
-      - not_contains: "you should apply"
-      - fact:
-          source: ipos
-          entity: "Nova Textiles"
-          field: listing_date
-          extract: {regex: 'list\w*\D*(\d{1,2} \w+ \d{4})', parser: date}
-```
-
-Fact checks are **declarative** in v1: each assertion names the entity and field, and defines its own regex/parser to extract the claimed value from the reply. No LLM claim extraction (deterministic, free, easy to debug).
-
-Once decided, the schema is defined by pydantic models in `scenarios/models.py`; models are the source of truth and the docs are generated or checked against them.
+- One scenario per file; turns are `say` / `tap_button` / `pick_row` / `send_image`; a failed turn skips the rest.
+- Rejected sends (the mock enforces Meta's limits) **fail the turn by default**; opt out with `allow_rejected: true`.
+- Fact checks are declarative: the scenario names the entity and field and supplies the regex/parser. A claim that can't be found, can't be parsed, or differs from the truth is a **failure**; never make a fact check pass silently.
+- `for_each` takes one variable; `{{ var }}` substitution is plain text replacement (not Jinja) done before validation.
+- Unknown keys are errors (`extra="forbid"`); errors carry `file:line`.
 
 ## Conventions
 
