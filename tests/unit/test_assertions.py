@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[2]
 IPOS = ROOT / "demo_bot" / "data" / "ipos.json"
 FIELDS = {
     "listing_date": "dates.listing",
+    "open_date": "dates.open",
     "close_date": "dates.close",
     "price_band_high": "price_band.high",
     "lot_size": "lot_size",
@@ -379,3 +380,61 @@ def test_why_text_explains_a_failure_and_keeps_the_detail() -> None:
 def test_why_is_accepted_alongside_in() -> None:
     check = parse_check({"contains": "x", "in": "last", "why": "because"})
     assert check.scope == "last" and check.why == "because"
+
+
+# --- known_dates --------------------------------------------------------------------------------
+
+
+def known(**extra: Any) -> dict[str, Any]:
+    spec = {"source": "ipos", "fields": ["listing_date", "close_date"]}
+    return {"known_dates": {**spec, **extra}}
+
+
+def test_find_dates_reads_every_spelling_in_order() -> None:
+    from wa_agent_test.assertions.parsers import find_dates
+
+    text = (
+        "Opens 20th November 2026, closes Nov 25, 2026; allotment 2026-11-26; "
+        "listing on 30/11/2026 or 1 Dec. 2026 or 2 December, 2026."
+    )
+    assert [d.isoformat() for _, d in find_dates(text)] == [
+        "2026-11-20",
+        "2026-11-25",
+        "2026-11-26",
+        "2026-11-30",
+        "2026-12-01",
+        "2026-12-02",
+    ]
+    assert find_dates("31 February 2026 and 99/99/2026 and 'May 2026'") == []
+    assert find_dates("no dates here") == []
+
+
+def test_known_dates_passes_when_every_date_is_in_the_data() -> None:
+    ok, why = run(known(), msg("Nova lists on 30 November 2026; closes 25 November 2026."))
+    assert ok and why == "all 2 date(s) in the reply appear in the data (ipos)"
+
+
+def test_known_dates_with_no_dates_passes_and_says_so() -> None:
+    ok, why = run(known(), msg("I can't give advice."))
+    assert ok and "no dates" in why
+
+
+def test_known_dates_fails_on_an_invented_date() -> None:
+    ok, why = run(known(), msg("Nova lists on 30 November 2026, opened 29 Sep 2022."))
+    assert not ok
+    assert "29 Sep 2022" in why and "1 of 2 date(s) were real" in why
+
+
+def test_known_dates_only_allows_the_listed_fields() -> None:
+    # 20 November is Nova's opening date, but only listing and closing dates are allowed here
+    ok, why = run(known(), msg("It opens 20 November 2026."))
+    assert not ok and "20 November 2026" in why
+
+
+def test_known_dates_problems_with_the_source_fail_loudly() -> None:
+    ok, why = run(known(source="nope"), msg("x"))
+    assert not ok and "'nope' isn't defined" in why
+    ok, why = run(known(fields=["colour"]), msg("x"))
+    assert not ok and "has no dates for colour" in why
+    with pytest.raises(ValueError, match="known_dates"):
+        parse_check({"known_dates": {"source": "ipos"}})

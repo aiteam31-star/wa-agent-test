@@ -12,7 +12,7 @@ from typing import Any, ClassVar, Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from wa_agent_test.assertions.base import Assertion, BotMessage, TurnContext, excerpt
-from wa_agent_test.assertions.parsers import PARSERS, show
+from wa_agent_test.assertions.parsers import PARSERS, find_dates, parse_date, show
 from wa_agent_test.truth import TruthError
 
 
@@ -113,3 +113,55 @@ def _same(claimed: Any, expected: Any, tolerance: float) -> bool:
     if isinstance(claimed, float) and isinstance(expected, float):
         return abs(claimed - expected) <= tolerance
     return bool(claimed == expected)
+
+
+class KnownDatesSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+    fields: list[str]  # truth fields whose values (across all records) are the allowed dates
+
+
+class KnownDates(Assertion):
+    """Every date written in the reply must be a real date from the data.
+
+    This catches *invented* dates (a bot that makes up "opened on 29 Sep 2022") without needing
+    to know which IPO each date belongs to, and without failing a reply that gives no dates.
+    A reply with no dates passes, and the result says so. It does not catch a real date attached
+    to the wrong thing (a closing date given as an opening date); use ``fact:`` for that.
+    """
+
+    kind: ClassVar[str] = "known_dates"
+    value: KnownDatesSpec
+
+    def check(self, selected: list[BotMessage], ctx: TurnContext) -> tuple[bool, str]:
+        spec = self.value
+        source = ctx.truth.get(spec.source)
+        if source is None:
+            known = ", ".join(sorted(ctx.truth)) or "none"
+            return False, f"truth source {spec.source!r} isn't defined (defined: {known})"
+        values = getattr(source, "values", None)
+        if values is None:
+            return False, f"truth source {spec.source!r} can't list all values of a field"
+        allowed: set[Any] = set()
+        for field in spec.fields:
+            for raw in values(field):
+                try:
+                    allowed.add(parse_date(raw))
+                except ValueError:
+                    return False, f"truth source {spec.source!r}: {raw!r} ({field}) isn't a date"
+        if not allowed:
+            return False, f"truth source {spec.source!r} has no dates for {', '.join(spec.fields)}"
+
+        text = "\n".join(m.text for m in selected)
+        found = find_dates(text)
+        if not found:
+            return True, "the reply states no dates, so none are invented"
+        invented = [raw for raw, parsed in found if parsed not in allowed]
+        if invented:
+            shown = ", ".join(dict.fromkeys(invented))
+            return False, (
+                f"reply contains date(s) that aren't in the data ({spec.source}): {shown}; "
+                f"{len(found) - len(invented)} of {len(found)} date(s) were real"
+            )
+        return True, f"all {len(found)} date(s) in the reply appear in the data ({spec.source})"

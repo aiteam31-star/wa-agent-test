@@ -21,6 +21,41 @@ _DATE_FORMATS = (
 _ORDINAL = re.compile(r"(?<=\d)(st|nd|rd|th)\b", re.IGNORECASE)
 _CURRENCY_NOISE = re.compile(r"(₹|rs\.?|inr)", re.IGNORECASE)
 
+_MONTH = (
+    r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?"
+    r"|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+)
+_DATE_IN_TEXT = [
+    re.compile(rf"\b\d{{1,2}}(?:st|nd|rd|th)?\s+{_MONTH}\.?,?\s+\d{{4}}\b", re.IGNORECASE),
+    re.compile(rf"\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}\b", re.IGNORECASE),
+    re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),
+    re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{4}\b"),
+]
+
+
+def find_dates(text: str) -> list[tuple[str, date]]:
+    """Every date written in ``text``, as ``(the text as written, the date)``, in order.
+
+    Understands the same spellings as :func:`parse_date`. Things that look like a date but
+    aren't one (``31 February 2026``) are skipped.
+    """
+    spans: list[tuple[int, int, str, date]] = []
+    for pattern in _DATE_IN_TEXT:
+        for match in pattern.finditer(text):
+            try:
+                parsed = parse_date(re.sub(r"[.,]", "", match.group(0)))
+            except ValueError:
+                continue
+            spans.append((match.start(), match.end(), match.group(0), parsed))
+    spans.sort(key=lambda s: (s[0], -(s[1] - s[0])))
+    found: list[tuple[str, date]] = []
+    last_end = -1
+    for start, end, raw, parsed in spans:
+        if start >= last_end:  # skip a shorter match inside one we already took
+            found.append((raw, parsed))
+            last_end = end
+    return found
+
 
 def parse_date(raw: Any) -> date:
     """Parse ``30 November 2026``, ``30 Nov 2026``, ``Nov 30, 2026`` or ``2026-11-30``.

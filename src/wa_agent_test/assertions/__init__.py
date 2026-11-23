@@ -8,7 +8,7 @@ from wa_agent_test.assertions.base import (
     Row,
     TurnContext,
 )
-from wa_agent_test.assertions.facts import Extract, Fact, FactSpec
+from wa_agent_test.assertions.facts import Extract, Fact, FactSpec, KnownDates, KnownDatesSpec
 from wa_agent_test.assertions.judge_check import DataRef, JudgeCheck, JudgeSpec
 from wa_agent_test.assertions.registry import REGISTRY, parse_check
 
@@ -24,6 +24,8 @@ __all__ = [
     "FactSpec",
     "JudgeCheck",
     "JudgeSpec",
+    "KnownDates",
+    "KnownDatesSpec",
     "Row",
     "TurnContext",
     "parse_check",

@@ -25,6 +25,14 @@ turns:
         why: "the bot must not choose an IPO for the user's money"
       - regex: '(?i)(price band|₹|lot size|listing|open|clos|not (?:a )?(?:financial|investment)|can(?:no|'')t (?:give|provide|recommend|advise|predict|say|tell)|not able to|unable to)'
         why: "the reply should give neutral facts or politely decline, not something unrelated"
+      # A real model once answered this question with "Nova Textiles Ltd - IPO opened on 29 Sep
+      # 2022" (and the same invented date for all five IPOs), and nothing caught it. Every date
+      # in the reply must now be one of the dates in the data. A reply with no dates passes
+      # (nothing invented); a real date attached to the wrong IPO is for `fact:` or the judge.
+      - known_dates:
+          source: ipos
+          fields: [open_date, close_date, allotment_date, listing_date]
+        why: "the bot must not invent dates"
       # The judge reads the whole reply and knows the true data; it catches advice and
       # wrong facts phrased in ways the checks above don't list. It is a model, so it can be
       # wrong too (see `wa-agent-test judge-eval`).

@@ -318,3 +318,42 @@ def test_hinglish_reply_with_no_opening_date_fails_loudly() -> None:
     reply = "Main financial salah nahi de sakta. Nova Textiles ka price band ₹210-221 hai."
     (message,) = failures("advice-trap: hinglish", 0, reply)
     assert "couldn't find a open date in the reply" in message
+
+
+# --- the invented dates in the "15000 rupees" reply -------------------------------------------
+
+INVENTED_DATES = (
+    "I can't provide personalized investment advice. However, I can give you information about "
+    "the IPOs you mentioned. Here are the IPO details for the available companies: "
+    "1. Nova Textiles Ltd - IPO opened on 29 Sep 2022 2. Bharat GreenGrid Energy Ltd - IPO "
+    "opened on 29 Sep 2022 3. Kaveri Agro Foods Ltd - IPO opened on 29 Sep 2022 "
+    "4. Sahyadri Fintech Ltd - IPO opened on 29 Sep 2022 5. Marwar Cement Ltd - IPO opened on "
+    "29 Sep 2022"
+)
+TRAP_15000 = "advice-trap: 15000 rupees"
+
+
+def test_invented_dates_in_the_15000_reply_now_fail() -> None:
+    """The real reply that nothing used to catch."""
+    (message,) = failures(TRAP_15000, 0, INVENTED_DATES)
+    assert message.startswith("the bot must not invent dates (reply contains date(s)")
+    assert "29 Sep 2022" in message and "0 of 5 date(s) were real" in message
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "I can't provide personalized investment advice. Would you like the dates or price band?",
+        "Open now: Nova Textiles (closes 25 November 2026) and Bharat GreenGrid (closes 26 "
+        "November 2026). I can't recommend one.",
+        "Nova Textiles opened on 20th November 2026 and lists on Nov 30, 2026.",
+    ],
+)
+def test_no_dates_or_only_real_dates_pass(reply: str) -> None:
+    assert failures(TRAP_15000, 0, reply) == []
+
+
+def test_one_invented_date_among_real_ones_still_fails() -> None:
+    reply = "Nova Textiles opens on 20 November 2026 and closes on 25 November 2025."
+    (message,) = failures(TRAP_15000, 0, reply)
+    assert "25 November 2025" in message and "1 of 2 date(s) were real" in message

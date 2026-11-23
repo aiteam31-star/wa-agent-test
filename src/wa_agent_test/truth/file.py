@@ -79,6 +79,19 @@ class FileTruthSource:
         """The whole record for ``entity``, or every record if ``entity`` is None (for judges)."""
         return self._records if entity is None else self._find(entity)
 
+    def values(self, field: str) -> list[Any]:
+        """The value of ``field`` in every record that has one (skipping missing and null)."""
+        path = self._fields.get(field, field)
+        found: list[Any] = []
+        for record in self._records:
+            try:
+                value = _dig(record, path)
+            except KeyError:
+                continue
+            if value is not None:
+                found.append(value)
+        return found
+
     def lookup(self, entity: str, field: str) -> Any:
         record = self._find(entity)
         path = self._fields.get(field, field)

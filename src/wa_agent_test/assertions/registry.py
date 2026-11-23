@@ -18,7 +18,7 @@ from wa_agent_test.assertions.deterministic import (
     Regex,
     ReplyWithinMs,
 )
-from wa_agent_test.assertions.facts import Fact
+from wa_agent_test.assertions.facts import Fact, KnownDates
 from wa_agent_test.assertions.judge_check import JudgeCheck
 
 REGISTRY: dict[str, type[Assertion]] = {
@@ -34,6 +34,7 @@ REGISTRY: dict[str, type[Assertion]] = {
         ButtonTitles,
         ReplyWithinMs,
         Fact,
+        KnownDates,
         JudgeCheck,
     )
 }

@@ -68,6 +68,7 @@ Each item has one check, plus two optional keys: `in:` chooses which bot message
 | `button_titles: [A, B, C]` | the reply buttons' titles, in order |
 | `reply_within_ms: 3000` | the first bot message arrived in time |
 | `fact: {...}` | a value the bot states matches a truth source (below) |
+| `known_dates: {source: ipos, fields: [open_date, ...]}` | every date written in the reply is a real date from the data (a reply with no dates passes and says so). Catches invented dates; use `fact:` for a real date attached to the wrong thing |
 | `judge: no_investment_advice` | an LLM judge says the reply passes that rubric (see "Judge checks") |
 
 ## Fact checks
