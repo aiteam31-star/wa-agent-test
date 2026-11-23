@@ -242,12 +242,12 @@ def test_missing_path(tmp_path: Path) -> None:
 # --- the shipped examples -----------------------------------------------------------------
 
 
-def test_the_15_example_files_are_valid() -> None:
+def test_the_20_example_files_are_valid() -> None:
     files = sorted(EXAMPLES.glob("*.yaml"))
-    assert len(files) == 15
+    assert len(files) == 20
     scenarios = load_scenarios(EXAMPLES)
     assert {s.source_file for s in scenarios} == {str(f) for f in files}
-    assert len({s.name for s in scenarios}) == len(scenarios) == 25  # for_each expands 3 files
+    assert len({s.name for s in scenarios}) == len(scenarios) == 30  # for_each expands 3 files
     assert all(s.description for s in scenarios)
 
 

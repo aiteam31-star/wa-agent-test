@@ -291,8 +291,16 @@ class ScenarioRunner:
                     message=f"the bot sent a message WhatsApp would reject: {reasons}",
                 )
             )
-        if error is None and (bot_messages or not rejected):
-            ctx = TurnContext(messages=bot_messages, truth=self.truth)
+        judged: list[BotMessage] | None = None
+        if error is None:
+            if rejected and not scenario.allow_rejected_for(turn):
+                # The turn fails anyway, but check the text of everything the bot *tried* to
+                # send too, so one run reports every problem (a wrong date AND a rejected send).
+                judged = [to_bot_message(c, sent_at) for c in captured]
+            elif bot_messages or not rejected:
+                judged = bot_messages
+        if judged is not None:
+            ctx = TurnContext(messages=judged, truth=self.truth)
             checks.extend(check.evaluate(ctx) for check in turn.expect)
 
         ok = error is None and all(c.passed for c in checks)

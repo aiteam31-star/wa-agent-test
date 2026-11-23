@@ -102,7 +102,7 @@ def test_truth_source_file_must_exist(tmp_path: Path) -> None:
 def test_validate_the_examples() -> None:
     result = cli.invoke(app, ["validate", str(EXAMPLES / "scenarios")])
     assert result.exit_code == 0
-    assert "OK: 25 scenario(s) from 15 file(s)" in result.output
+    assert "OK: 30 scenario(s) from 20 file(s)" in result.output
 
 
 def test_validate_reports_file_and_line_and_exits_2(tmp_path: Path) -> None:

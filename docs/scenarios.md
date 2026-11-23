@@ -98,7 +98,15 @@ Dates are understood as `30 November 2026`, `30 Nov 2026`, `Nov 30, 2026`, `2026
 
 ## Rejected messages
 
-The mock Graph API enforces WhatsApp's limits (for example at most 3 reply buttons). If the bot sends something WhatsApp would reject, the turn **fails by default** and the reasons are listed, even if you wrote no check for it. Set `allow_rejected: true` (in `defaults` or on a turn) to opt out.
+The mock Graph API enforces WhatsApp's limits (for example at most 3 reply buttons). If the bot sends something WhatsApp would reject, the turn **fails by default** and the reasons are listed, even if you wrote no check for it.
+
+The text of the rejected message is still checked against your `expect:` list, so one run reports every problem together, for example:
+
+```
+rejected: interactive.action.buttons: has 4 buttons; at most 3 allowed; also: reply says listing date 1 December 2026 but ipos says 30 November 2026; also: reply must not contain ['you should apply']
+```
+
+The rejected message was never delivered, so the turn fails even if all your other checks pass. Set `allow_rejected: true` (in `defaults` or on a turn) to opt out; the rejected text is then not checked.
 
 ## `for_each`
 

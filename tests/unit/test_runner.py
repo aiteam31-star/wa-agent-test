@@ -264,9 +264,72 @@ async def test_a_message_the_mock_rejects_fails_the_turn() -> None:
     assert next(c for c in turn.checks if c.kind == "expect_messages").passed
 
 
-async def test_other_checks_are_not_run_on_a_turn_with_only_rejected_messages() -> None:
-    result = await play(four_buttons, scenario([{"say": "x", "expect": [{"button_count": 3}]}]))
-    assert [c.kind for c in result.turns[0].checks] == ["rejected_messages"]
+async def test_the_text_of_a_rejected_message_is_checked_too() -> None:
+    """A rejected 4-button message that ALSO has a wrong date and advice reports all three."""
+
+    async def bad_everything(inbound: Inbound, send: Send) -> None:
+        body = buttons_body(
+            inbound.sender,
+            "listing date is 1 December 2026. You should apply!",
+            [(f"b{i}", f"Option {i}") for i in range(4)],
+        )
+        await send(body)
+
+    sc = scenario(
+        [
+            {
+                "say": "x",
+                "expect": [
+                    FACT,
+                    {"not_contains": "you should apply"},
+                    {"button_count": 3},
+                    {"contains": "listing date"},  # this one is fine
+                ],
+            }
+        ]
+    )
+    result = await play(bad_everything, sc)
+    turn = result.turns[0]
+    assert turn.status == "failed" and not result.passed
+    assert [(c.kind, c.passed) for c in turn.checks] == [
+        ("rejected_messages", False),
+        ("fact", False),
+        ("not_contains", False),
+        ("button_count", False),
+        ("contains", True),
+    ]
+    assert turn.bot_messages == []  # still: nothing was delivered
+    assert (
+        turn.problems[0] == "rejected: interactive.action.buttons: has 4 buttons; at most 3 allowed"
+    )
+    assert [p.split(":")[0] for p in turn.problems[1:]] == ["also", "also", "also"]
+    assert (
+        "also: reply says listing date 1 December 2026 but ipos says 30 November 2026"
+        in turn.summary
+    )
+    assert "also: reply must not contain ['you should apply']" in turn.summary
+    assert "also: expected 3 reply buttons but got [4]" in turn.summary
+
+
+async def test_a_rejected_message_with_clean_text_still_fails_the_turn() -> None:
+    sc = scenario([{"say": "x", "expect": [{"contains": "Too many"}]}])
+    result = await play(four_buttons, sc)
+    turn = result.turns[0]
+    assert turn.status == "failed" and not result.passed
+    assert [(c.kind, c.passed) for c in turn.checks] == [
+        ("rejected_messages", False),
+        ("contains", True),
+    ]
+    assert turn.problems == [
+        "rejected: interactive.action.buttons: has 4 buttons; at most 3 allowed"
+    ]
+
+
+async def test_problems_and_summary_cover_errors_and_are_empty_when_passing() -> None:
+    ok = await play(echo, scenario([{"say": "x"}]))
+    assert ok.turns[0].problems == [] and ok.turns[0].summary == ""
+    silent_result = await play(silent, scenario([{"say": "x"}], timeout_s=0.2))
+    assert silent_result.turns[0].problems == ["the bot didn't reply within 0.2s"]
 
 
 async def test_allow_rejected_lets_the_turn_pass() -> None:

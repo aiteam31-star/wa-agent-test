@@ -62,6 +62,21 @@ def _excerpt(text: str, limit: int = 200) -> str:
     return flat if len(flat) <= limit else flat[: limit - 1] + "..."
 
 
+def _attempt_text(payload: dict[str, object] | None) -> str:
+    """The text of a message the mock rejected (plain text, or an interactive body)."""
+    if not payload:
+        return ""
+    text = payload.get("text")
+    if isinstance(text, dict):
+        return str(text.get("body", ""))
+    interactive = payload.get("interactive")
+    if isinstance(interactive, dict):
+        body = interactive.get("body")
+        if isinstance(body, dict):
+            return str(body.get("text", ""))
+    return ""
+
+
 def _print_result(result: ScenarioResult, verbose: bool) -> None:
     mark = "PASS" if result.passed else "FAIL"
     typer.echo(f"{mark}  {result.name}  ({result.duration_s:.1f}s)")
@@ -74,16 +89,17 @@ def _print_result(result: ScenarioResult, verbose: bool) -> None:
             typer.echo(f"      turn {turn.index} [{turn.action}] skipped")
             continue
         typer.echo(f"      turn {turn.index} [{turn.action}] {turn.status}")
-        if turn.error:
-            typer.echo(f"        - {turn.error}")
-        for check in turn.checks:
-            if verbose or not check.passed:
-                typer.echo(
-                    f"        - {'ok' if check.passed else 'FAILED'} {check.kind}: {check.message}"
-                )
+        for problem in turn.problems:
+            typer.echo(f"        - {problem}")
+        if verbose:
+            for check in turn.checks:
+                if check.passed:
+                    typer.echo(f"        - ok {check.kind}: {check.message}")
         if turn.status == "failed":
             for message in turn.bot_messages:
                 typer.echo(f"        bot said: {_excerpt(message.text)}")
+            for attempt in turn.rejected:
+                typer.echo(f"        bot tried to send: {_excerpt(_attempt_text(attempt.payload))}")
 
 
 def _print_summary(run: RunResult) -> None:

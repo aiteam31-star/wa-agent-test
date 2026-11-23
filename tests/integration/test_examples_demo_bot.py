@@ -79,12 +79,21 @@ UNAFFECTED_BY_BUTTON_BUG = {
     "unknown-ipo-not-invented",
     "fast-reply",
     "unsupported-image",
+    # these two get a list message, not the 3-button message
+    "advice-trap: listing gains",
+    "advice-trap: 15000 rupees",
+}
+ADVICE_VICTIMS = {
+    "no-investment-advice",
+    "advice-trap: should I apply",
+    "advice-trap: is it a good IPO",
+    "advice-trap: hinglish",
 }
 
 
-async def test_clean_bot_passes_all_25_scenarios() -> None:
+async def test_clean_bot_passes_all_30_scenarios() -> None:
     async with run_examples() as run:
-        assert run.total == 25
+        assert run.total == 30
         assert failed_names(run) == set(), [
             (s.name, [c.message for t in s.turns for c in t.checks if not c.passed])
             for s in run.scenarios
@@ -115,7 +124,7 @@ async def test_four_buttons_is_caught_without_any_button_assertion() -> None:
 
 async def test_you_should_apply_is_caught() -> None:
     async with run_examples(buggy_mode=True, buggy_force=frozenset({"advice"})) as run:
-        assert failed_names(run) == {"no-investment-advice"}
+        assert failed_names(run) == ADVICE_VICTIMS
         check = next(
             c
             for s in run.scenarios
@@ -167,7 +176,7 @@ async def cli_run(tmp_path: Path, **bot_settings: Any) -> tuple[int, str, dict[s
 async def test_cli_run_against_a_clean_bot(tmp_path: Path) -> None:
     code, output, results = await cli_run(tmp_path)
     assert code == 0, output
-    assert "25 passed, 0 failed, 25 total" in output
+    assert "30 passed, 0 failed, 30 total" in output
     assert all(s["passed"] for s in results["scenarios"])
 
 
@@ -176,7 +185,27 @@ async def test_cli_run_against_a_buggy_bot_exits_1_and_explains(tmp_path: Path) 
         tmp_path, buggy_mode=True, buggy_force=frozenset({"advice"})
     )
     assert code == 1
-    assert "24 passed, 1 failed, 25 total" in output
+    assert "26 passed, 4 failed, 30 total" in output
     assert "FAIL  no-investment-advice" in output
     assert "you should apply" in output.lower()
-    assert [s["name"] for s in results["scenarios"] if not s["passed"]] == ["no-investment-advice"]
+    assert {s["name"] for s in results["scenarios"] if not s["passed"]} == ADVICE_VICTIMS
+
+
+async def test_all_three_bugs_at_once_are_reported_together_per_scenario() -> None:
+    """The 4-button rejection no longer hides the wrong date or the advice in the same reply."""
+    async with run_examples(
+        buggy_mode=True, buggy_force=frozenset({"buttons", "advice", "listing_date"}), buggy_seed=1
+    ) as run:
+        by_name = {s.name: s for s in run.scenarios}
+        date_turn = by_name["listing-date-fact: Nova Textiles"].turns[0]
+        assert date_turn.problems[0].startswith(
+            "rejected: interactive.action.buttons: has 4 buttons"
+        )
+        assert any("but ipos says 30 November 2026" in p for p in date_turn.problems[1:])
+        assert all(p.startswith("also: ") for p in date_turn.problems[1:])
+
+        advice_turn = by_name["advice-trap: should I apply"].turns[0]
+        assert advice_turn.problems[0].startswith("rejected: ")
+        assert any("you should apply" in p.lower() for p in advice_turn.problems[1:])
+        assert advice_turn.bot_messages == []  # still nothing reached the user
+        assert by_name["no-investment-advice"].passed is False

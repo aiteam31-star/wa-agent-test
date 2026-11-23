@@ -66,7 +66,7 @@ Outside the package:
 The schema is final for v1 and documented in [docs/scenarios.md](docs/scenarios.md); the pydantic models in `scenarios/models.py` are the source of truth. Decisions to keep:
 
 - One scenario per file; turns are `say` / `tap_button` / `pick_row` / `send_image`; a failed turn skips the rest.
-- Rejected sends (the mock enforces Meta's limits) **fail the turn by default**; opt out with `allow_rejected: true`.
+- Rejected sends (the mock enforces Meta's limits) **fail the turn by default**; opt out with `allow_rejected: true`. The text of a rejected message is still run through the turn's checks so one run reports every problem together (`TurnResult.problems`: `rejected: ...; also: ...`).
 - Fact checks are declarative: the scenario names the entity and field and supplies the regex/parser. A claim that can't be found, can't be parsed, or differs from the truth is a **failure**; never make a fact check pass silently.
 - `for_each` takes one variable; `{{ var }}` substitution is plain text replacement (not Jinja) done before validation.
 - Write fact regexes for how a real LLM phrases things (several wordings, `(?i)`, bounded gaps), and check units with a separate check using `why:` so failures name one thing. `tests/unit/test_example_patterns.py` pins the example patterns to real model sentences.
