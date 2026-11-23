@@ -79,6 +79,11 @@ src = ["src", "tests", "."]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Demo scripts: nested `async with` blocks read more clearly than one long combined statement,
+# and sample replies are easier to read on one line.
+"scripts/*" = ["SIM117", "E501", "ASYNC240"]
+
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["typer.Argument", "typer.Option"]
 
