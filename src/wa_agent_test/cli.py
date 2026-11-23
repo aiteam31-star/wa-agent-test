@@ -15,6 +15,14 @@ import httpx
 import typer
 
 from wa_agent_test.assertions import JudgeCheck
+from wa_agent_test.baseline import (
+    Baseline,
+    BaselineError,
+    Comparison,
+    compare,
+    load_baseline,
+    save_baseline,
+)
 from wa_agent_test.config import (
     ConfigError,
     ProjectConfig,
@@ -26,6 +34,7 @@ from wa_agent_test.config import (
 from wa_agent_test.judge_eval import CaseResult, evaluate_cases, load_cases
 from wa_agent_test.judges import CachedJudge, Judge
 from wa_agent_test.mock_graph import CaptureStore, MockGraphServer, create_app
+from wa_agent_test.report import attempt_text, write_report
 from wa_agent_test.scenarios import (
     RunResult,
     Scenario,
@@ -71,21 +80,6 @@ def _excerpt(text: str, limit: int = 200) -> str:
     return flat if len(flat) <= limit else flat[: limit - 1] + "..."
 
 
-def _attempt_text(payload: dict[str, object] | None) -> str:
-    """The text of a message the mock rejected (plain text, or an interactive body)."""
-    if not payload:
-        return ""
-    text = payload.get("text")
-    if isinstance(text, dict):
-        return str(text.get("body", ""))
-    interactive = payload.get("interactive")
-    if isinstance(interactive, dict):
-        body = interactive.get("body")
-        if isinstance(body, dict):
-            return str(body.get("text", ""))
-    return ""
-
-
 def _print_result(result: ScenarioResult, verbose: bool) -> None:
     mark = "PASS" if result.passed else "FAIL"
     typer.echo(f"{mark}  {result.name}  ({result.duration_s:.1f}s)")
@@ -108,7 +102,7 @@ def _print_result(result: ScenarioResult, verbose: bool) -> None:
             for message in turn.bot_messages:
                 typer.echo(f"        bot said: {_excerpt(message.text)}")
             for attempt in turn.rejected:
-                typer.echo(f"        bot tried to send: {_excerpt(_attempt_text(attempt.payload))}")
+                typer.echo(f"        bot tried to send: {_excerpt(attempt_text(attempt.payload))}")
 
 
 def _print_summary(run: RunResult) -> None:
@@ -116,6 +110,26 @@ def _print_summary(run: RunResult) -> None:
     typer.echo(
         f"{run.passed} passed, {run.failed} failed, {run.total} total in {run.duration_s:.1f}s"
     )
+
+
+def _print_comparison(comparison: Comparison, run: RunResult, baseline_file: Path) -> None:
+    saved = comparison.baseline_saved_at.strftime("%Y-%m-%d %H:%M UTC")
+    typer.echo("")
+    typer.echo(f"Compared with the baseline saved {saved} ({baseline_file}):")
+    shown = ("newly_broken", "newly_fixed", "new_failing", "new_passing")
+    for item in comparison.with_status(*shown):
+        typer.echo(f"  {item.label.upper():<14} {item.name}")
+        for problem in item.problems[:3]:
+            typer.echo(f"                 {_excerpt(problem, 220)}")
+    still_failing = comparison.with_status("still_failing")
+    if still_failing:
+        typer.echo(f"  STILL FAILING  {', '.join(i.name for i in still_failing)}")
+    for name in comparison.removed:
+        typer.echo(f"  REMOVED        {name}")
+    typer.echo("")
+    typer.echo(comparison.summary)
+    if comparison.has_regression:
+        typer.echo("Result: REGRESSION (something is newly broken)")
 
 
 async def _run(
@@ -192,8 +206,24 @@ def run(
     no_judge_cache: bool = typer.Option(
         False, "--no-judge-cache", help="Ask the judge again instead of reusing saved verdicts."
     ),
+    save_baseline_flag: bool = typer.Option(
+        False,
+        "--save-baseline",
+        help="Save this run as the known-good baseline (later runs are compared with it).",
+    ),
+    baseline_path: Path | None = typer.Option(
+        None, "--baseline", help="Baseline file (default: run.baseline in the config)."
+    ),
+    report: Path | None = typer.Option(
+        None, "--report", help="Write a self-contained HTML report here."
+    ),
 ) -> None:
-    """Run scenarios against the bot and report which pass."""
+    """Run scenarios against the bot, compare with the baseline, and report.
+
+    With a saved baseline, each scenario is labelled still passing / still failing / newly broken
+    / newly fixed, and the exit code is 1 only if something is newly broken (or is new and
+    failing). Without one, the exit code is 1 if any scenario failed.
+    """
     _safe_output()
     try:
         config_path = find_config(config, path)
@@ -205,6 +235,13 @@ def run(
     scenarios = _filter(scenarios, tag, name)
     if not scenarios:
         raise _fail("no scenarios matched", 2)
+    baseline_file = baseline_path or (config_path.parent / project.run.baseline)
+    previous: Baseline | None = None
+    if not save_baseline_flag:
+        try:
+            previous = load_baseline(baseline_file)  # fail early, before a long run
+        except BaselineError as exc:
+            raise _fail(str(exc), 2) from exc
     judge: Judge | None = None
     if _uses_judge(scenarios):
         try:
@@ -226,10 +263,40 @@ def run(
     except httpx.HTTPError as exc:  # pragma: no cover - defensive
         raise _fail(f"harness error: {exc}", 3) from exc
     _print_summary(result)
+
+    comparison: Comparison | None = None
+    exit_code = result.exit_code
+    if save_baseline_flag:
+        saved = save_baseline(baseline_file, result)
+        failing = [name for name, entry in saved.scenarios.items() if not entry.passed]
+        typer.echo(
+            f"Baseline saved to {baseline_file} "
+            f"({len(saved.scenarios) - len(failing)} passing, {len(failing)} failing)"
+        )
+        if failing:
+            typer.echo(
+                "warning: these scenarios were failing, so they are now recorded as known "
+                f"failures: {', '.join(failing)}",
+                err=True,
+            )
+        exit_code = 0  # the baseline is the new reference point
+    elif previous is not None:
+        comparison = compare(result, previous)
+        _print_comparison(comparison, result, baseline_file)
+        exit_code = 1 if comparison.has_regression else 0
+    else:
+        typer.echo(f"No baseline at {baseline_file}; save one with --save-baseline.")
+
+    if report is not None:
+        written = write_report(report, result, comparison, baseline_path=str(baseline_file))
+        typer.echo(f"Report written to {written.resolve()}")
     if json_out:
-        json_out.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        payload = result.model_dump(mode="json")
+        if comparison is not None:
+            payload["comparison"] = comparison.model_dump(mode="json")
+        json_out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         typer.echo(f"Results written to {json_out}")
-    raise typer.Exit(result.exit_code)
+    raise typer.Exit(exit_code)
 
 
 @app.command()

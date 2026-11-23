@@ -160,7 +160,14 @@ class ScenarioRunner:
         failed = False
         for index, turn in enumerate(scenario.turns, start=1):
             if failed:
-                out.append(TurnResult(index=index, action=turn.label, status="skipped"))
+                out.append(
+                    TurnResult(
+                        index=index,
+                        action=turn.label,
+                        user_text=turn.user_text,
+                        status="skipped",
+                    )
+                )
                 continue
             result, previous = await self._run_turn(scenario, turn, index, user, previous)
             out.append(result)
@@ -236,6 +243,7 @@ class ScenarioRunner:
             return TurnResult(
                 index=index,
                 action=label,
+                user_text=turn.user_text,
                 status=status,
                 duration_ms=(time.monotonic() - started) * 1000,
                 **kwargs,

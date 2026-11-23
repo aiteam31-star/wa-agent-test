@@ -141,6 +141,34 @@ turns:
 
 One variable per file. Values can be mappings, used as `{{ item.key }}`. Always put quotes around any string containing `{{ }}`.
 
+## Baselines and the report
+
+Save a run as the "known good" result, then every later run is compared with it:
+
+```powershell
+wa-agent-test run examples/scenarios --save-baseline                     # once, with a good bot
+wa-agent-test run examples/scenarios --report reports/report.html        # later: compare + report
+```
+
+The baseline is one small JSON file (default `baselines/baseline.json` next to `wa-agent-test.yaml`; change it with `--baseline PATH` or `run.baseline` in the config). Commit it, so everyone compares against the same thing.
+
+Each scenario gets a label:
+
+| Label | Meaning |
+|---|---|
+| still passing | passed in the baseline, passes now |
+| still failing | failed in the baseline, fails now (a known problem) |
+| **newly broken** | passed in the baseline, fails now |
+| newly fixed | failed in the baseline, passes now |
+| new (passing / failing) | not in the baseline |
+| removed | in the baseline, not in this run |
+
+The run prints a summary such as `2 newly broken, 1 fixed, 27 unchanged` and **exits with 1 only if something is newly broken or is new and already failing**. Known failures that keep failing do not fail the run. Without a baseline the exit code is 1 if any scenario failed. `--save-baseline` exits 0 and warns about any failing scenarios it records as known failures; save from a run you trust.
+
+`--report PATH` writes one self-contained HTML file (no scripts, fonts or images from the internet; safe to email or attach to a CI run). It starts with the summary, then lists scenarios worst first (newly broken, newly fixed, new, still failing, still passing). Each scenario is shown as a WhatsApp-style chat: the user's messages on the right, the bot's replies (with their buttons and list rows) on the left. A message WhatsApp would reject is drawn with a dashed red border and "NOT DELIVERED". Under each turn, failed checks are highlighted with their reason, including the combined `rejected: ...; also: ...` lines and the judge's verdict and reason. Text from the bot is escaped, so it can't inject anything into the page.
+
+`scripts/demo_baseline.py` runs the whole thing against the demo bot.
+
 ## YAML notes
 
 Only `true` and `false` are booleans here, so `tap_button: Yes` is the text "Yes". Unknown keys are errors, so a typo like `expct:` fails loudly. Errors show `file:line`.

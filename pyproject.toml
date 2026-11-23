@@ -83,6 +83,8 @@ select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
 # Demo scripts: nested `async with` blocks read more clearly than one long combined statement,
 # and sample replies are easier to read on one line.
 "scripts/*" = ["SIM117", "E501", "ASYNC240"]
+# The embedded HTML/CSS template has long lines by nature.
+"src/wa_agent_test/report/html.py" = ["E501"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["typer.Argument", "typer.Option"]

@@ -52,6 +52,7 @@ class RunConfig(_Strict):
     concurrency: int = Field(4, ge=1)
     seed: int | None = 1
     scenario_timeout_s: float = Field(300.0, gt=0)
+    baseline: str = "baselines/baseline.json"  # relative to this file; see --save-baseline
 
 
 class BusinessConfig(_Strict):

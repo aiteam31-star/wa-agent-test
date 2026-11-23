@@ -20,6 +20,7 @@ class RejectedMessage(BaseModel):
 class TurnResult(BaseModel):
     index: int  # 1-based
     action: str
+    user_text: str = ""  # what the simulated user said, in plain words
     status: Literal["passed", "failed", "skipped"]
     duration_ms: float = 0.0
     error: str | None = None  # the turn couldn't run or the bot never answered
