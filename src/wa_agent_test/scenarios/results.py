@@ -38,18 +38,23 @@ class TurnResult(BaseModel):
         if self.error:
             items.append(self.error)
         rejection = next(
-            (c for c in self.checks if c.kind == "rejected_messages" and not c.passed), None
+            (c for c in self.checks if c.kind == "rejected_messages" and c.failed), None
         )
         if rejection is not None:
             reasons = "; ".join(r for item in self.rejected for r in item.reasons)
             items.append(f"rejected: {reasons}")
-        items += [c.message for c in self.checks if not c.passed and c is not rejection]
+        items += [c.message for c in self.checks if c.failed and c is not rejection]
         return [items[0], *(f"also: {i}" for i in items[1:])] if items else []
 
     @property
     def summary(self) -> str:
         """All problems on one line."""
         return "; ".join(self.problems)
+
+    @property
+    def warnings(self) -> list[str]:
+        """Messages of checks that failed but are only warnings (they never fail the turn)."""
+        return [c.message for c in self.checks if c.warned]
 
 
 class ScenarioResult(BaseModel):
@@ -61,6 +66,10 @@ class ScenarioResult(BaseModel):
     duration_s: float
     error: str | None = None  # scenario-level problem (e.g. overall timeout)
     turns: list[TurnResult] = []
+
+    @property
+    def warning_count(self) -> int:
+        return sum(len(t.warnings) for t in self.turns)
 
 
 class RunResult(BaseModel):
@@ -79,6 +88,10 @@ class RunResult(BaseModel):
     @property
     def failed(self) -> int:
         return self.total - self.passed
+
+    @property
+    def warning_count(self) -> int:
+        return sum(s.warning_count for s in self.scenarios)
 
     @property
     def exit_code(self) -> int:

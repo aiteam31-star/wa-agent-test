@@ -103,6 +103,7 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 **Exit:** `wa-agent-test run --baseline baselines/main.json --report reports/index.html` produces a diff-aware report and the right exit code.
 
 **Delivered (core):** `run --save-baseline` / `--baseline PATH` (default `run.baseline` in the config); every scenario labelled still passing / still failing / newly broken / newly fixed, plus new (passing or failing) and removed; summary line like "2 newly broken, 1 fixed, 27 unchanged"; exit 1 only if something is newly broken or new-and-failing (known failures don't fail the run; saving a baseline exits 0 and warns about recorded failures); `--report PATH` writes one self-contained HTML file (WhatsApp-style chats, failed checks and the combined "rejected: ...; also: ..." lines highlighted, judge verdicts with reasons, everything escaped, dark mode); `--json` includes the comparison; `scripts/demo_baseline.py` re-runs the demo.
+**Also delivered:** `severity: fail|warn` on every check (warnings are yellow in the console and report, counted, and never fail a turn, a baseline label or the exit code); the demo's judge checks are `warn`.
 **Carried over:** diffing *how* a passing scenario's replies changed (text similarity), judge score drift, latency regression, JUnit XML, and baseline-per-branch workflows.
 
 ## Stage 9 — CLI polish and GitHub Actions

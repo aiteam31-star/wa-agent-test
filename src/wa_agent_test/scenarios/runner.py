@@ -320,7 +320,7 @@ class ScenarioRunner:
             for check in turn.expect:
                 checks.append(await check.aevaluate(ctx))
 
-        ok = error is None and all(c.passed for c in checks)
+        ok = error is None and not any(c.failed for c in checks)
         result = finish(
             "passed" if ok else "failed",
             error=error,

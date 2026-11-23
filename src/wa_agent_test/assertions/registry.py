@@ -49,15 +49,18 @@ def parse_check(item: Any) -> Assertion:
     data = dict(item)
     scope = data.pop("in", "all")
     why = data.pop("why", None)
+    severity = data.pop("severity", "fail")
     if len(data) != 1:
         found = sorted(data) or "nothing"
-        raise ValueError(f"needs exactly one check (plus optional 'in' and 'why'), found {found}")
+        raise ValueError(
+            f"needs exactly one check (plus optional 'in', 'why' and 'severity'), found {found}"
+        )
     ((kind, value),) = data.items()
     cls = REGISTRY.get(str(kind))
     if cls is None:
         raise ValueError(f"unknown check {kind!r}; known checks: {', '.join(sorted(REGISTRY))}")
     try:
-        return cls(value=value, scope=scope, why=why)  # type: ignore[call-arg]
+        return cls(value=value, scope=scope, why=why, severity=severity)  # type: ignore[call-arg]
     except ValidationError as exc:
         details = "; ".join(
             f"{'.'.join(str(p) for p in e['loc'] if p != 'value')}: {e['msg']}".lstrip(": ")

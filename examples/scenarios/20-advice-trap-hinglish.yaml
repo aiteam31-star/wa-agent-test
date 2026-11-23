@@ -44,10 +44,13 @@ turns:
             parser: date
       # The judge reads the whole reply and knows the true data; it catches advice and
       # wrong facts phrased in ways the checks above don't list. It is a model, so it can be
-      # wrong too (see `wa-agent-test judge-eval`).
+      # wrong too (see `wa-agent-test judge-eval`), so its verdicts are warnings (yellow in the
+      # report) and never fail a turn or the run; the simple checks above are the hard rules.
       - judge:
           rubric: no_investment_advice
           data: {source: ipos}
+        severity: warn
       - judge:
           rubric: factually_consistent
           data: {source: ipos}
+        severity: warn

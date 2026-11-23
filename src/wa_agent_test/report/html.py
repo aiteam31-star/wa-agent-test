@@ -106,12 +106,19 @@ details.scenario[open] > summary::before { content: "\\25BE"; }
 .problems .title { color: var(--fail); font-weight: 700; margin: 0 0 3px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
 .problems ul { margin: 0; padding-left: 18px; }
 .problems li { margin: 2px 0; overflow-wrap: anywhere; }
+.warnings { margin: 10px 0 0; padding: 9px 12px; background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 8px; color: var(--text); }
+.warnings .title { color: var(--warn); font-weight: 700; margin: 0 0 3px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+.warnings ul { margin: 0; padding-left: 18px; }
+.warnings li { margin: 2px 0; overflow-wrap: anywhere; }
+.badge.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
 .checks { list-style: none; margin: 8px 0 0; padding: 0; }
 .check { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 6px; font-size: 13.5px; overflow-wrap: anywhere; }
 .check.fail { background: var(--fail-bg); border-left: 4px solid var(--fail); }
 .check.pass { color: var(--muted); }
+.check.warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
 .mark { font-weight: 800; width: 1.1em; flex: none; }
-.check.fail .mark { color: var(--fail); } .check.pass .mark { color: var(--ok); }
+.check.fail .mark { color: var(--fail); } .check.pass .mark { color: var(--ok); } .check.warn .mark { color: var(--warn); }
 .tag { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px; background: var(--tag); color: var(--text); }
 .tag.judge { background: var(--judge-bg); color: var(--judge); font-weight: 700; }
 .err { margin: 8px 0 0; color: var(--fail); font-weight: 600; }
@@ -129,6 +136,7 @@ footer { margin: 34px 0 40px; color: var(--muted); font-size: 12px; text-align: 
   {% for g in groups %}
     <a class="chip {{ g.tone }}" href="#group-{{ g.key }}"><b>{{ g.scenarios|length }}</b> {{ g.label|lower }}</a>
   {% endfor %}
+  {% if warning_count %}<span class="chip warn"><b>{{ warning_count }}</b> warning{{ '' if warning_count == 1 else 's' }}</span>{% endif %}
   </div>
 </div></header>
 <main class="wrap">
@@ -140,6 +148,7 @@ footer { margin: 34px 0 40px; color: var(--muted); font-size: 12px; text-align: 
     <summary>
       <span class="badge {{ g.tone }}">{{ g.label }}</span>
       <span class="name">{{ s.name }}</span>
+      {% if s.warnings %}<span class="badge warn">{{ s.warnings }} warning{{ '' if s.warnings == 1 else 's' }}</span>{% endif %}
       <span class="spacer"></span>
       <span class="dim">{{ s.duration }}{% if s.tags %} &middot; {{ s.tags|join(", ") }}{% endif %}</span>
     </summary>
@@ -179,12 +188,19 @@ footer { margin: 34px 0 40px; color: var(--muted); font-size: 12px; text-align: 
           <ul>{% for p in t.problems %}<li>{{ p }}</li>{% endfor %}</ul>
         </div>
         {% endif %}
+        {% if t.warnings %}
+        <div class="warnings">
+          <p class="title">Warnings (these never fail the run)</p>
+          <ul>{% for w in t.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
         {% if t.checks %}
         <ul class="checks">
           {% for c in t.checks %}
-          <li class="check {{ 'pass' if c.passed else 'fail' }}">
-            <span class="mark">{{ '✓' if c.passed else '✗' }}</span>
+          <li class="check {{ c.state }}">
+            <span class="mark">{{ '✓' if c.state == 'pass' else ('⚠' if c.state == 'warn' else '✗') }}</span>
             <span class="tag{{ ' judge' if c.kind == 'judge' else '' }}">{{ c.kind }}</span>
+            {% if c.state == 'warn' %}<span class="tag">warning</span>{% endif %}
             <span>{{ c.message }}</span>
           </li>
           {% endfor %}
@@ -245,7 +261,16 @@ def _turn_view(turn: TurnResult) -> dict[str, Any]:
         "action": turn.action,
         "duration": f"{turn.duration_ms / 1000:.1f}s" if turn.status != "skipped" else "",
         "problems": turn.problems,
-        "checks": [{"kind": c.kind, "passed": c.passed, "message": c.message} for c in turn.checks],
+        "warnings": turn.warnings,
+        "checks": [
+            {
+                "kind": c.kind,
+                "passed": c.passed,
+                "state": "pass" if c.passed else ("warn" if c.warned else "fail"),
+                "message": c.message,
+            }
+            for c in turn.checks
+        ],
         "bot": [
             {
                 "text": m.text,
@@ -277,7 +302,8 @@ def _scenario_view(
         "was": was,
         "error": scenario.error,
         "turns": [_turn_view(t) for t in scenario.turns],
-        "open": status in OPEN_BY_DEFAULT,
+        "warnings": scenario.warning_count,
+        "open": status in OPEN_BY_DEFAULT or scenario.warning_count > 0,
     }
 
 
@@ -348,7 +374,8 @@ def render_report(
         )
         baseline_note = "No baseline to compare with (save one with --save-baseline)"
     started = run.started_at.strftime("%Y-%m-%d %H:%M UTC")
-    meta = f"{run.total} scenario(s), run {started}, took {run.duration_s:.0f}s. {baseline_note}."
+    warned = f" {run.warning_count} warning(s) (never failures)." if run.warning_count else ""
+    meta = f"{run.total} scenario(s), run {started}, took {run.duration_s:.0f}s.{warned} {baseline_note}."
 
     env = Environment(autoescape=True, trim_blocks=True, lstrip_blocks=True)
     return env.from_string(TEMPLATE).render(
@@ -358,6 +385,7 @@ def render_report(
         verdict_class=verdict_class,
         meta=meta,
         groups=groups,
+        warning_count=run.warning_count,
         removed=comparison.removed if comparison else [],
         footer="Generated by wa-agent-test. This file is self-contained: no scripts or "
         "network access are needed to read it.",

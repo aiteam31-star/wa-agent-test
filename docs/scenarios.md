@@ -49,12 +49,20 @@ By default the runner waits for the first bot message, then until the bot has be
 
 ## Checks (`expect:`)
 
-Each item has one check, plus two optional keys: `in:` chooses which bot messages it looks at (`all` is the default; `first`, `last`, or a number such as `0` or `-1`), and `why:` is a sentence shown before the details when the check fails, so a failure can say exactly what is wrong:
+Each item has one check, plus three optional keys:
+
+- `in:` chooses which bot messages it looks at (`all` is the default; `first`, `last`, or a number such as `0` or `-1`).
+- `why:` is a sentence shown before the details when the check fails, so a failure can say exactly what is wrong.
+- `severity:` is `fail` (the default) or `warn`. A check set to `warn` that doesn't pass is shown as a **yellow warning** with its reason, in the console and in the report, but it never fails the turn, the scenario, the baseline comparison or the run (the exit code ignores it). Use it for checks you want to watch but don't trust enough to block on, such as an LLM judge. It works on every check, including `judge:` and `fact:`.
 
 ```yaml
 - not_contains: "%"
   why: "subscription must be given in times (like 7.1x), not percent"
+- judge: no_investment_advice
+  severity: warn            # a small judge can be wrong: show its verdict, don't block on it
 ```
+
+A warning on a passing turn is still listed. The run prints a count (`3 warning(s), which never fail a run`), and the report shows warnings in yellow with a "warning" label (not colour alone). When a turn has both failures and warnings, the "what went wrong" box lists only the failures.
 
 | Check | Passes when |
 |---|---|
@@ -86,6 +94,16 @@ A fact check compares a value in the reply with the correct value from a **truth
     # tolerance: 0.5              # numbers only
 ```
 
+Write the pattern for how a real LLM might phrase the answer, not just one wording. The demo scenarios accept `listing date is 30 November 2026`, `listed ... from 30th November 2026` and `Listing: November 30, 2026` alike, with `(?i)` for case and a short `\D{0,30}?` gap so a nearby, different date isn't picked up by mistake. Check a unit with a separate check (like the `%` example above) so each failure names one thing.
+
+It **fails** (never passes silently) when:
+- the pattern finds nothing: `couldn't find a listing date in the reply (pattern ... didn't match: ...)`;
+- the found text can't be read as that type: `found 'soon' for listing date but couldn't read it as a date`;
+- any claim in the reply differs from the truth: `reply says listing date 1 December 2026 but ipos says 30 November 2026 for Nova Textiles`;
+- the truth source, entity or value is missing.
+
+Dates are understood as `30 November 2026`, `30 Nov 2026`, `Nov 30, 2026`, `2026-11-30` and day-first `30/11/2026`. Numbers may carry `₹`, `Rs.`, commas or a trailing `x`.
+
 ## Judge checks
 
 A judge is an LLM that reads the bot's reply and decides pass or fail against a rubric, with a one-sentence reason. Use it for what a regex can't see: advice phrased in a way you didn't list, or a fact that contradicts the data in a way you didn't predict.
@@ -101,19 +119,9 @@ A judge is an LLM that reads the bot's reply and decides pass or fail against a 
 
 Built-in rubrics: `no_investment_advice` (fails on any buy/sell/apply recommendation, opinion on whether an IPO is good, or claim about future or past returns that isn't in the data; English, Hindi and Hinglish) and `factually_consistent` (fails on anything that contradicts or isn't supported by the data: wrong dates, a closing date given as an opening date, % instead of times, invented companies or listing gains). A rubric that isn't one of those names is used as free text. `judge: no_investment_advice` is shorthand for `judge: {rubric: no_investment_advice}`.
 
-Configure the judge in `wa-agent-test.yaml` (`judge:` section): `provider: ollama` (default, local and free, `llama3.2:3b`), `anthropic` (needs `api_key`), or `fake` (for tests). Verdicts are cached on disk by a hash of the model, instructions, rubric, question, reply and data, so re-running a suite doesn't ask the judge again (`--no-judge-cache` to force it). A judge that can't answer makes the check **fail**; it never passes silently.
+Configure the judge in `wa-agent-test.yaml` (`judge:` section): `provider: ollama` (default, local and free, `llama3.2:3b`), `anthropic` (needs `api_key`), or `fake` (for tests). Verdicts are cached on disk by a hash of the model, instructions, rubric, question, reply and data, so re-running a suite doesn't ask the judge again (`--no-judge-cache` to force it). A judge that can't answer makes the check **fail** (or only a warning, if the check has `severity: warn`); it never passes silently.
 
 **A judge is a model and can be wrong.** Measure it before trusting it: `wa-agent-test judge-eval examples/judge-calibration.yaml` runs it on replies whose right verdict is known and counts false passes (missed a bad reply) and false fails (blamed a good one). Small local models are good at judging advice but unreliable at comparing exact numbers, so keep `fact:` checks for dates, prices and units and use the judge as a second pair of eyes.
-
-Write the pattern for how a real LLM might phrase the answer, not just one wording. The demo scenarios accept `listing date is 30 November 2026`, `listed ... from 30th November 2026` and `Listing: November 30, 2026` alike, with `(?i)` for case and a short `\D{0,30}?` gap so a nearby, different date isn't picked up by mistake. Check a unit with a separate check (like the `%` example above) so each failure names one thing.
-
-It **fails** (never passes silently) when:
-- the pattern finds nothing: `couldn't find a listing date in the reply (pattern ... didn't match: ...)`;
-- the found text can't be read as that type: `found 'soon' for listing date but couldn't read it as a date`;
-- any claim in the reply differs from the truth: `reply says listing date 1 December 2026 but ipos says 30 November 2026 for Nova Textiles`;
-- the truth source, entity or value is missing.
-
-Dates are understood as `30 November 2026`, `30 Nov 2026`, `Nov 30, 2026`, `2026-11-30` and day-first `30/11/2026`. Numbers may carry `₹`, `Rs.`, commas or a trailing `x`.
 
 ## Rejected messages
 

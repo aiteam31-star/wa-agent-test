@@ -12,6 +12,7 @@ from wa_agent_test.judges import Judge
 from wa_agent_test.truth import TruthSource
 
 Scope = Literal["all", "first", "last"] | int
+Severity = Literal["fail", "warn"]
 
 
 class Button(BaseModel):
@@ -39,8 +40,19 @@ class BotMessage(BaseModel):
 
 class CheckResult(BaseModel):
     kind: str
-    passed: bool
+    passed: bool  # did the check itself pass?
     message: str
+    severity: Severity = "fail"  # "warn": a failure is reported but never fails the turn or run
+
+    @property
+    def failed(self) -> bool:
+        """True if this check failed and counts against the turn (not a mere warning)."""
+        return not self.passed and self.severity == "fail"
+
+    @property
+    def warned(self) -> bool:
+        """True if this check failed but is only a warning."""
+        return not self.passed and self.severity == "warn"
 
 
 @dataclass(frozen=True)
@@ -85,6 +97,7 @@ class Assertion(BaseModel):
     kind: ClassVar[str]
     scope: Scope = "all"
     why: str | None = None  # optional explanation shown when the check fails
+    severity: Severity = "fail"  # "warn" makes a failure a yellow warning, never a failure
 
     def check(self, selected: list[BotMessage], ctx: TurnContext) -> tuple[bool, str]:
         raise NotImplementedError
@@ -96,13 +109,13 @@ class Assertion(BaseModel):
     def _result(self, passed: bool, message: str) -> CheckResult:
         if not passed and self.why:
             message = f"{self.why} ({message})"
-        return CheckResult(kind=self.kind, passed=passed, message=message)
+        return CheckResult(kind=self.kind, passed=passed, message=message, severity=self.severity)
 
     def evaluate(self, ctx: TurnContext) -> CheckResult:
         try:
             selected = select(ctx.messages, self.scope)
         except ScopeError as exc:
-            return CheckResult(kind=self.kind, passed=False, message=str(exc))
+            return self._result(False, str(exc))
         return self._result(*self.check(selected, ctx))
 
     async def aevaluate(self, ctx: TurnContext) -> CheckResult:
@@ -110,5 +123,5 @@ class Assertion(BaseModel):
         try:
             selected = select(ctx.messages, self.scope)
         except ScopeError as exc:
-            return CheckResult(kind=self.kind, passed=False, message=str(exc))
+            return self._result(False, str(exc))
         return self._result(*await self.acheck(selected, ctx))

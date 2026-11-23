@@ -87,6 +87,8 @@ def _print_result(result: ScenarioResult, verbose: bool) -> None:
         typer.echo(f"      {result.error}")
     for turn in result.turns:
         if turn.status == "passed" and not verbose:
+            for warning in turn.warnings:  # a passing turn can still carry yellow warnings
+                typer.echo(f"      warning (turn {turn.index}): {_excerpt(warning, 220)}")
             continue
         if turn.status == "skipped":
             typer.echo(f"      turn {turn.index} [{turn.action}] skipped")
@@ -94,6 +96,8 @@ def _print_result(result: ScenarioResult, verbose: bool) -> None:
         typer.echo(f"      turn {turn.index} [{turn.action}] {turn.status}")
         for problem in turn.problems:
             typer.echo(f"        - {problem}")
+        for warning in turn.warnings:
+            typer.echo(f"        - warning: {_excerpt(warning, 220)}")
         if verbose:
             for check in turn.checks:
                 if check.passed:
@@ -107,9 +111,10 @@ def _print_result(result: ScenarioResult, verbose: bool) -> None:
 
 def _print_summary(run: RunResult) -> None:
     typer.echo("")
-    typer.echo(
-        f"{run.passed} passed, {run.failed} failed, {run.total} total in {run.duration_s:.1f}s"
-    )
+    line = f"{run.passed} passed, {run.failed} failed, {run.total} total in {run.duration_s:.1f}s"
+    if run.warning_count:
+        line += f"; {run.warning_count} warning(s), which never fail a run"
+    typer.echo(line)
 
 
 def _print_comparison(comparison: Comparison, run: RunResult, baseline_file: Path) -> None:
