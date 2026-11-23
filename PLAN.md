@@ -1,13 +1,13 @@
 # PLAN.md
 
-Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stage 0 (the scaffold) is done.
+Staged roadmap for `wa-agent-test`. Each stage ends with working, tested software and explicit exit criteria. Stages 0-2 are done.
 
 ## Stage 0 — Scaffold ✅
 Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, empty packages, import smoke test.
 
 **Exit:** `pip install -e ".[dev]"` works; `pytest`, `ruff` and `mypy` all pass.
 
-## Stage 1 — Payloads and webhook simulator
+## Stage 1 — Payloads and webhook simulator ✅
 - `payloads/`: builders for text, image, audio, document, location, interactive (button/list reply), reaction, and status (`sent/delivered/read/failed`) webhooks; configurable `phone_number_id`, `waba_id`, `wa_id`, profile name, timestamps, message IDs.
 - HMAC `X-Hub-Signature-256` signing with an app secret.
 - `simulator/`: async httpx sender, verification handshake (`hub.mode/verify_token/challenge`), configurable timeouts, structured result (status, latency, body).
@@ -15,7 +15,10 @@ Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, emp
 
 **Exit:** can POST a realistic signed webhook to an arbitrary URL; payloads validated against fixtures.
 
-## Stage 2 — Mock Graph API
+**Delivered:** text, `button_reply`, `list_reply`, image and `sent/delivered/read` status builders; signing; `WebhookSimulator` (many concurrent users, verification handshake); status webhooks in the current per-message-pricing (PMP) format with the legacy CBP format behind `pricing_format="cbp"`; Meta format findings in `docs/meta-format-notes.yaml`.
+**Carried over (not built):** audio, document, location and reaction builders; `failed`/`played` statuses; golden fixtures copied from Meta's docs (tests currently assert shapes inline). Add when a scenario needs them.
+
+## Stage 2 — Mock Graph API ✅
 - FastAPI app: `POST /{version}/{phone_number_id}/messages` for text, template, image/audio/document, interactive, reaction; mark-as-read; Meta-style success and error responses.
 - Capture store: per-run, keyed by recipient `wa_id`, with arrival timestamps, `asyncio` wait primitives (`wait_for_count`, `wait_for_quiescence`).
 - Bearer-token check (configurable), request-body validation with Meta-style error shape.
@@ -24,6 +27,9 @@ Repo layout, `pyproject.toml`, `CLAUDE.md`, `PLAN.md`, CI skeleton, license, emp
 - In-process start on ephemeral port plus standalone `serve-mock`.
 
 **Exit:** a minimal echo bot (`examples/echo_bot/`) pointed at the mock has its replies captured end-to-end in an integration test.
+
+**Delivered:** `POST /{version}/{phone_number_id}/messages` for text, interactive (button/list) and template; limits in one file (`mock_graph/limits.yaml`, each marked confirmed/conflicting/unconfirmed); rejected requests logged and recorded; capture store with `wait_for_count`; bearer-token check; `MockGraphServer` (real ephemeral port), tested over real HTTP.
+**Carried over (not built):** image/audio/document/reaction message bodies and mark-as-read; `wait_for_quiescence`; fault injection; `serve-mock` CLI command (Stage 9); the `examples/echo_bot/` end-to-end test (the Stage 3 demo bot supersedes it).
 
 ## Stage 3 — Demo bot (`demo_bot/`)
 A realistic WhatsApp Cloud API bot to test the harness against, answering questions about **5 fictional Indian IPOs**.

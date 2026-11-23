@@ -1,0 +1,79 @@
+# WhatsApp Cloud API outbound-message limits enforced by the mock Graph API.
+# This is the ONLY place these numbers live; code reads them via mock_graph/limits.py.
+#
+# status:
+#   confirmed    - stated in Meta's official Cloud API docs (fetched 2026-11-23)
+#   conflicting  - Meta's own pages disagree; the value used is noted
+#   unconfirmed  - not stated in the docs we could read; best guess, may reject/accept wrongly
+#
+# Lengths are counted in Python characters (code points); Meta's exact counting is unconfirmed.
+
+text_body_max:
+  value: 4096
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/text-messages
+
+# --- interactive: reply buttons ---
+reply_buttons_max:
+  value: 3
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages/
+reply_button_title_max:
+  value: 20
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages/
+  note: Titles must also be unique within a message (stated in the docs).
+reply_button_id_max:
+  value: 256
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages/
+reply_buttons_body_max:
+  value: 1024
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages/
+interactive_header_text_max:
+  value: 60
+  status: unconfirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+  note: 60 is stated for list-message headers; the reply-buttons page gives no limit for text headers.
+interactive_footer_max:
+  value: 60
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages/
+
+# --- interactive: list messages ---
+list_body_max:
+  value: 4096
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+  note: A search summary suggested 1024 on the messages reference page, but that page states no limit.
+list_button_label_max:
+  value: 20
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+list_sections_max:
+  value: 10
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+list_rows_max:
+  value: 10
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+  note: Total across all sections combined.
+list_section_title_max:
+  value: 24
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+  note: Section title is required when there is more than one section (messages reference page).
+list_row_title_max:
+  value: 24
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+list_row_description_max:
+  value: 72
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/
+list_row_id_max:
+  value: 200
+  status: confirmed
+  source: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages/

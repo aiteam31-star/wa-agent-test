@@ -1,0 +1,68 @@
+# Findings about Meta's WhatsApp Cloud API webhook formats that the payload builders rely on.
+# Same convention as src/wa_agent_test/mock_graph/limits.yaml:
+#   confirmed    - stated in Meta's official docs (read 2026-11-23)
+#   conflicting  - Meta's own pages disagree; the choice made is in `note`
+#   unconfirmed  - not stated in the docs we could read / only seen in a summary
+# Re-verify before relying on anything that is not `confirmed`.
+
+status_webhook:
+  pricing_model_current:
+    value: PMP
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: Per-message pricing went live 2025-07-01 (changelog). build_status default (pricing_format="pmp").
+  pricing_model_legacy:
+    value: CBP
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: Docs say CBP is only set for webhooks sent before 2025-07-01. Kept behind pricing_format="cbp".
+  conversation_object:
+    value: omitted for Graph API v24.0+ unless the message was sent in an open Free Entry Point window
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/changelog
+    note: >-
+      Changelog entry dated 2025-10-08. For v23.0 and lower the object is still sent (with a
+      per-message id). Not modeled: a PMP payload that still has `conversation` (v23-), and the
+      Free Entry Point variant.
+  pricing_type_values:
+    value: [regular, free_customer_service, free_entry_point, free_group_customer_service]
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: >-
+      free_customer_service / free_group_customer_service change meaning on 2026-10-01 (pricing
+      page). A `pricing.subtype` (free_tier, paid_exempt) exists for free service messages; not
+      modeled, and the paid_exempt dates were only seen in a summary (unconfirmed).
+  pricing_category_values:
+    value: [authentication, authentication-international, group_marketing, group_service, group_utility, marketing, marketing_lite, referral_conversion, service, utility]
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: build_status always uses "service".
+  billable_field:
+    value: still present (boolean)
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: Docs say it will be deprecated in a future version; use pricing.type + pricing.category instead. We still emit it.
+  pricing_on_which_statuses:
+    value: delivered only (PMP format)
+    status: conflicting
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: >-
+      Reference says pricing is "only included with sent status, and one of either delivered or
+      read" and that it can appear in only one of sent/delivered. Its v24.0 sent example omits
+      pricing because it appeared on the associated delivered status. We emit it on delivered
+      only and never on sent or read. Real bots should not depend on which status carries it.
+  payload_examples_page_is_stale:
+    value: its delivered example still shows CBP + conversation
+    status: conflicting
+    source: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples
+    note: Contradicts the status reference and changelog; we followed the status reference and changelog. That page only has a `delivered` example (no sent/read/failed).
+  other_statuses_not_modeled:
+    value: [failed, played]
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: failed carries `errors` and no pricing/conversation; played (voice messages) added 2025-11-03. Not built yet.
+  business_scoped_user_ids:
+    value: recipient_user_id / contacts[].user_id fields exist
+    status: confirmed
+    source: https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+    note: Users with usernames and no phone number get recipient_user_id and no recipient_id. Not modeled; all simulated users have a phone number.
