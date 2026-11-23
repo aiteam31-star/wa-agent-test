@@ -39,6 +39,13 @@ Package: `src/wa_agent_test/` (src layout, import name `wa_agent_test`, CLI `wa-
 | `report/` | Jinja2 HTML report (self-contained single file) and JSON/JUnit output. |
 | `cli.py` | Typer app: `run`, `serve-mock`, `send`, `baseline save|diff`, `report`, `validate`. Thin; no business logic. |
 
+Outside the package:
+
+| Path | Responsibility |
+|---|---|
+| `demo_bot/` | Demo WhatsApp Cloud API bot answering questions about 5 fictional Indian IPOs from `demo_bot/data/ipos.json`, with a pluggable LLM provider (Anthropic, OpenAI, local Ollama, plus a deterministic `fake` for tests/CI). `BUGGY_MODE` injects three known defects (wrong listing date, 4 buttons instead of Meta's max 3, "you should apply" advice) that the harness must catch. Not part of the installed package; its fixture doubles as a truth source. |
+| `examples/echo_bot/` | Minimal echo bot used for the mock Graph API integration test. |
+
 ## Key design rules
 
 1. **Isolation per scenario.** Every scenario gets its own simulated user (unique `wa_id`) and its own capture bucket, so scenarios run in parallel without cross-talk. The mock Graph API routes captured messages to a conversation by the `to` field of the outbound message.
@@ -50,23 +57,30 @@ Package: `src/wa_agent_test/` (src layout, import name `wa_agent_test`, CLI `wa-
 7. **Pluggability via Protocols + entry points** (`wa_agent_test.judges`, `wa_agent_test.truth_sources`, `wa_agent_test.assertions`). Core never imports provider SDKs at module import time.
 8. **Run results are plain data** (pydantic models, JSON-serializable). Baseline diffing and reports consume only that data, never live objects.
 9. **Exit codes:** `0` all pass and no regressions; `1` assertion failures or regressions; `2` usage/config errors; `3` harness/infrastructure error (bot unreachable, etc.).
-10. **Secrets** (API keys, app secret) come from environment variables or the config file's `${ENV_VAR}` references; never written to reports or baselines.
+10. **The mock enforces Meta's limits and records violations.** E.g. more than 3 reply buttons returns a Meta-style 400 and the rejected attempt is stored so assertions can fail on it. Don't silently accept payloads Meta would reject.
+11. **Secrets** (API keys, app secret) come from environment variables or the config file's `${ENV_VAR}` references; never written to reports or baselines.
 
-## Scenario YAML (shape, to be finalized in stage 3)
+## Scenario YAML (illustrative only; schema is finalised at the start of Stage 4)
+
+The exact schema is intentionally **not decided yet**. Do not build on this sketch. Whatever is chosen must support: multi-turn conversations, button/list replies, multiple bot messages per turn, and per-turn timeouts.
 
 ```yaml
-name: order-status
-bot:
-  webhook_url: http://localhost:8000/webhook
+name: ipo-listing-date
 turns:
-  - user: "Where is my order 1234?"
+  - user: "When does Nova Textiles list?"
+    timeout_s: 20
     expect:
-      - contains: "1234"
-      - fact: {claim_from_reply: true, source: orders}
-      - judge: {rubric: "Polite and gives a delivery estimate"}
+      - not_contains: "you should apply"
+      - fact:
+          source: ipos
+          entity: "Nova Textiles"
+          field: listing_date
+          extract: {regex: 'list\w*\D*(\d{1,2} \w+ \d{4})', parser: date}
 ```
 
-The schema is defined by pydantic models in `scenarios/models.py`; models are the source of truth and the docs are generated or checked against them.
+Fact checks are **declarative** in v1: each assertion names the entity and field, and defines its own regex/parser to extract the claimed value from the reply. No LLM claim extraction (deterministic, free, easy to debug).
+
+Once decided, the schema is defined by pydantic models in `scenarios/models.py`; models are the source of truth and the docs are generated or checked against them.
 
 ## Conventions
 
@@ -90,4 +104,4 @@ mypy src
 
 ## Out of scope (for now)
 
-Testing against the real Meta API, template-message approval flows, WhatsApp Flows, and webhook delivery retries emulating Meta's backoff (tracked as later ideas in PLAN.md).
+Testing against the real Meta API, template-message approval flows, WhatsApp Flows, webhook delivery retries emulating Meta's backoff, and judge-based automatic claim extraction for fact checks (all tracked as later ideas in PLAN.md).
