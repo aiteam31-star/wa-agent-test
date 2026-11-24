@@ -37,7 +37,7 @@ Package: `src/wa_agent_test/` (src layout, import name `wa_agent_test`, CLI `wa-
 | `judges/` | `Judge` protocol; Ollama (default), Anthropic and fake judges over plain HTTP; built-in rubrics; on-disk verdict cache. A `judge:` check asks one; `judge_eval.py` / `wa-agent-test judge-eval` measure its mistakes. |
 | `baseline/` | `run --save-baseline` saves a run as "known good" (one small JSON file); later runs are compared with it and every scenario is labelled still passing / still failing / newly broken / newly fixed (plus new / removed). Exit code 1 only if something is newly broken or new-and-failing. |
 | `report/` | `--report`: one self-contained HTML file (Jinja2, no scripts or network): summary line, then each scenario as a WhatsApp-style chat with failed checks, the combined "rejected: ...; also: ..." lines and judge verdicts highlighted. Everything from the bot is HTML-escaped. |
-| `cli.py` | Typer app. Built: `run` (`--save-baseline`, `--baseline`, `--report`, `--json`), `validate`, `judge-eval`. Planned: `serve-mock`, `send`, JUnit output. Thin; no business logic. |
+| `cli.py` | Typer app. Built: `run` (`--save-baseline`, `--baseline`, `--report`, `--summary`, `--json`, `--fake-judge`), `validate`, `judge-eval`; also `python -m wa_agent_test`. Planned: `serve-mock`, `send`, JUnit output. Thin; no business logic. |
 | `config.py`, `yamlio.py` | Project config (`wa-agent-test.yaml`, `${ENV}` interpolation); YAML loading where only `true`/`false` are booleans (so `tap_button: Yes` stays text). |
 
 Outside the package:

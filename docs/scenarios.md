@@ -175,7 +175,7 @@ The run prints a summary such as `2 newly broken, 1 fixed, 27 unchanged` and **e
 
 `--report PATH` writes one self-contained HTML file (no scripts, fonts or images from the internet; safe to email or attach to a CI run). It starts with the summary, then lists scenarios worst first (newly broken, newly fixed, new, still failing, still passing). Each scenario is shown as a WhatsApp-style chat: the user's messages on the right, the bot's replies (with their buttons and list rows) on the left. A message WhatsApp would reject is drawn with a dashed red border and "NOT DELIVERED". Under each turn, failed checks are highlighted with their reason, including the combined `rejected: ...; also: ...` lines and the judge's verdict and reason. Text from the bot is escaped, so it can't inject anything into the page.
 
-`scripts/demo_baseline.py` runs the whole thing against the demo bot.
+`--summary PATH` writes a short Markdown summary of the same comparison (used for pull-request comments), and `--fake-judge` swaps in a judge that passes everything (for CI, where no model is available). `scripts/demo_baseline.py` runs the whole thing against the demo bot; `scripts/ci_run.py` does what the GitHub workflow does.
 
 ## YAML notes
 

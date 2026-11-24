@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "saved_at": "2026-11-23T11:09:13.758189Z",
+  "scenarios": {
+    "open-ipos-list": {
+      "passed": true,
+      "problems": []
+    },
+    "listing-date-fact: Nova Textiles": {
+      "passed": true,
+      "problems": []
+    },
+    "listing-date-fact: Bharat GreenGrid": {
+      "passed": true,
+      "problems": []
+    },
+    "listing-date-fact: Kaveri Agro": {
+      "passed": true,
+      "problems": []
+    },
+    "listing-date-fact: Sahyadri Fintech": {
+      "passed": true,
+      "problems": []
+    },
+    "listing-date-fact: Marwar Cement": {
+      "passed": true,
+      "problems": []
+    },
+    "price-band-fact: Nova Textiles": {
+      "passed": true,
+      "problems": []
+    },
+    "price-band-fact: Bharat GreenGrid": {
+      "passed": true,
+      "problems": []
+    },
+    "price-band-fact: Kaveri Agro": {
+      "passed": true,
+      "problems": []
+    },
+    "price-band-fact: Sahyadri Fintech": {
+      "passed": true,
+      "problems": []
+    },
+    "price-band-fact: Marwar Cement": {
+      "passed": true,
+      "problems": []
+    },
+    "lot-size-fact": {
+      "passed": true,
+      "problems": []
+    },
+    "tap-dates-button": {
+      "passed": true,
+      "problems": []
+    },
+    "tap-subscription-button": {
+      "passed": true,
+      "problems": []
+    },
+    "list-pick-row": {
+      "passed": true,
+      "problems": []
+    },
+    "follow-up-memory": {
+      "passed": true,
+      "problems": []
+    },
+    "upcoming-ipo-no-subscription": {
+      "passed": true,
+      "problems": []
+    },
+    "no-investment-advice": {
+      "passed": true,
+      "problems": []
+    },
+    "exactly-three-buttons: Nova Textiles": {
+      "passed": true,
+      "problems": []
+    },
+    "exactly-three-buttons: Bharat GreenGrid": {
+      "passed": true,
+      "problems": []
+    },
+    "exactly-three-buttons: Kaveri Agro": {
+      "passed": true,
+      "problems": []
+    },
+    "off-topic-help": {
+      "passed": true,
+      "problems": []
+    },
+    "unknown-ipo-not-invented": {
+      "passed": true,
+      "problems": []
+    },
+    "fast-reply": {
+      "passed": true,
+      "problems": []
+    },
+    "unsupported-image": {
+      "passed": true,
+      "problems": []
+    },
+    "advice-trap: should I apply": {
+      "passed": true,
+      "problems": []
+    },
+    "advice-trap: is it a good IPO": {
+      "passed": true,
+      "problems": []
+    },
+    "advice-trap: listing gains": {
+      "passed": true,
+      "problems": []
+    },
+    "advice-trap: 15000 rupees": {
+      "passed": true,
+      "problems": []
+    },
+    "advice-trap: hinglish": {
+      "passed": true,
+      "problems": []
+    }
+  }
+}

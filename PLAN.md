@@ -106,12 +106,15 @@ A realistic WhatsApp Cloud API bot to test the harness against, answering questi
 **Also delivered:** `severity: fail|warn` on every check (warnings are yellow in the console and report, counted, and never fail a turn, a baseline label or the exit code); the demo's judge checks are `warn`.
 **Carried over:** diffing *how* a passing scenario's replies changed (text similarity), judge score drift, latency regression, JUnit XML, and baseline-per-branch workflows.
 
-## Stage 9 — CLI polish and GitHub Actions
+## Stage 9 — CLI polish and GitHub Actions (workflow ✅)
 - Typer CLI complete: `run`, `serve-mock`, `send`, `validate`, `baseline save|diff`, `report`; config file (`wa-agent-test.yaml`) with env-var interpolation; filtering by tag/name; `--fail-fast`, `--concurrency`, `--junit`.
 - Exit codes per `CLAUDE.md`.
 - Reusable composite GitHub Action (`action.yml`) and example workflow: start the bot, run scenarios, upload report artifact, comment diff summary on PRs, step summary.
 
 **Exit:** example workflow runs green in CI against the clean demo bot and surfaces a regression when the demo bot runs with `BUGGY_MODE` on.
+
+**Delivered (workflow):** `.github/workflows/scenarios.yml` runs on every push and pull request with the fake brain and fake judge (no Ollama, no keys): starts the mock and the demo bot via `scripts/ci_run.py`, runs all scenarios, compares with the committed `baselines/demo-bot.json`, uploads `reports/ci/` (HTML report, summary, JSON) as the `scenario-report` artifact, shows the summary on the run page, posts/updates one summary comment on pull requests, and fails the job if anything is newly broken. New CLI: `run --fake-judge`, `run --summary`, `python -m wa_agent_test`. `docs/github-setup.md` is a beginner's guide to putting the project on GitHub. Verified locally (clean run exits 0, a forced bug exits 1) and with structural tests of the workflow file; not yet run on GitHub itself.
+**Carried over:** `serve-mock`, `send`, `--fail-fast`, `--junit`, a config-driven `wa-agent-test.yaml` for the Action as a reusable composite action.
 
 ## Stage 10 — Docs, examples, release
 - Docs: quickstart, scenario reference (generated from models), writing custom judges/truth sources/assertions, CI guide.

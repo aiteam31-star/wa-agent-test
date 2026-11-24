@@ -7,6 +7,7 @@ Demo and comparison scripts, kept so a result can be reproduced later. They run 
 | `run_matrix.py` | Every example scenario against the demo bot, as a pass/fail table. Modes: `fake` (all green), `fake-buggy` (the three bugs; `--force listing_date` for one), `ollama` (a real local model) | Ollama only for `ollama` mode and for the judge (`--fake-judge` skips it) |
 | `ollama_demo.py` | One question through the simulator to the bot backed by Ollama, with the reply and the tool calls | Ollama with `llama3.2:3b` pulled |
 | `demo_baseline.py` | The baseline and report demo: save a baseline with the clean bot, re-run with a bug, label every scenario against the baseline, write the HTML report and print where it is | Ollama for the judge, or `--fake-judge` |
+| `ci_run.py` | What the GitHub workflow runs: the demo bot (fake brain) and every scenario (fake judge), compared with the committed `baselines/demo-bot.json`; writes the report and summary to `reports/ci/`. `--save-baseline` refreshes the baseline; `--force listing_date` makes the bot misbehave so you can watch it fail | nothing (no model, no keys) |
 | `judge_side_by_side.py` | What the simple checks catch versus what the LLM judge catches on the advice traps (real run, hand-written replies, harder cases) | Ollama (bot and judge) |
 
 ```powershell

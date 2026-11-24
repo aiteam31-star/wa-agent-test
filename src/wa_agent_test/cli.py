@@ -32,9 +32,9 @@ from wa_agent_test.config import (
     load_config,
 )
 from wa_agent_test.judge_eval import CaseResult, evaluate_cases, load_cases
-from wa_agent_test.judges import CachedJudge, Judge
+from wa_agent_test.judges import CachedJudge, FakeJudge, Judge
 from wa_agent_test.mock_graph import CaptureStore, MockGraphServer, create_app
-from wa_agent_test.report import attempt_text, write_report
+from wa_agent_test.report import attempt_text, write_report, write_summary
 from wa_agent_test.scenarios import (
     RunResult,
     Scenario,
@@ -222,6 +222,14 @@ def run(
     report: Path | None = typer.Option(
         None, "--report", help="Write a self-contained HTML report here."
     ),
+    summary: Path | None = typer.Option(
+        None, "--summary", help="Write a short Markdown summary here (for PR comments)."
+    ),
+    fake_judge: bool = typer.Option(
+        False,
+        "--fake-judge",
+        help="Use the built-in fake judge, which passes everything (for CI, with no model).",
+    ),
 ) -> None:
     """Run scenarios against the bot, compare with the baseline, and report.
 
@@ -249,10 +257,14 @@ def run(
             raise _fail(str(exc), 2) from exc
     judge: Judge | None = None
     if _uses_judge(scenarios):
-        try:
-            judge = build_judge(project, config_path.parent, use_cache=not no_judge_cache)
-        except ConfigError as exc:
-            raise _fail(str(exc), 2) from exc
+        if fake_judge:
+            judge = FakeJudge()
+            typer.echo("Judge: fake (it passes everything, so judge checks prove nothing here)")
+        else:
+            try:
+                judge = build_judge(project, config_path.parent, use_cache=not no_judge_cache)
+            except ConfigError as exc:
+                raise _fail(str(exc), 2) from exc
     typer.echo(f"Running {len(scenarios)} scenario(s) with config {config_path}")
     try:
         result = asyncio.run(
@@ -293,8 +305,11 @@ def run(
         typer.echo(f"No baseline at {baseline_file}; save one with --save-baseline.")
 
     if report is not None:
-        written = write_report(report, result, comparison, baseline_path=str(baseline_file))
+        written = write_report(report, result, comparison, baseline_path=baseline_file.as_posix())
         typer.echo(f"Report written to {written.resolve()}")
+    if summary is not None:
+        wrote = write_summary(summary, result, comparison, baseline_path=baseline_file.as_posix())
+        typer.echo(f"Summary written to {wrote.resolve()}")
     if json_out:
         payload = result.model_dump(mode="json")
         if comparison is not None:
